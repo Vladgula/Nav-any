@@ -5,6 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+  <link rel="icon" type="image/x-icon" href="images/favicon.png">
 
   <link rel="stylesheet" href="nullstyle.css">
   <link rel="stylesheet" href="styles.css">
@@ -15,6 +16,7 @@
   <script type="text/javascript" src="../find_route.js"></script>
   <script type="text/javascript" src="js/show_route.js" defer></script>
   <script type="text/javascript" src="js/point_refs.js" defer></script>
+  <script type="text/javascript" src="js/autocomplete.js" defer></script>
 </head>
 
 <body>
@@ -63,6 +65,7 @@
             <input type="text" id="to" placeholder="Куда" class="form__input"/>
             <button type="button" id="button" onclick="showRoute();" class="form__button">Проложить маршрут</button>
           </form>
+          <div id="autocomplete" class="autocomplete"></div>
           <div id="output" class="output" hidden>
             <div class="output__header">
               <div class="output__line"></div>

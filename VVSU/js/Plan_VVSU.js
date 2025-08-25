@@ -143,6 +143,28 @@ let planXML = `
                 <Room wall="left" id="1334" />
                 <Path rotate="forward" walls="right">
                   <Stairs id="big_stairs" name="Большая лестница" to="большой лестницы" />
+                  <Joint name="Галерея ректоров" to="галереи ректоров"/>
+                  <Path rotate="forward" walls="right">
+                      <Joint to="выхода в коридор" text_forward="Зайдите в коридор" photo_forward="2/rector_gallery_corridor.jpg"/>
+                      <Path rotate="left" walls="left">
+                      <Joint to="кабинета 4200"/>
+                        <Path rotate="left" walls="left">
+                              <Path rotate="forward" walls="left">
+                                <Room wall="left" id="4200" />
+                                <Room wall="left" id="4206" />
+                                <Room wall="left" id="4207" />
+                                <Room wall="left" id="4208" />
+                                <Room wall="left" id="4209" />
+                              </Path>
+                              <Path rotate="back" walls="left">
+                                <Room wall="right" id="4103" />
+                                <Room wall="left" id="4104" />
+                                <Room wall="left" id="4102" />
+                                <Room wall="right" id="4101" />
+                              </Path>
+                            </Path>
+                      </Path>
+                  </Path>
                   <Path rotate="right" walls="left_right">
                     <Joint to="Лестничной площадки"/>
                     <Path rotate="left" walls="left_right">
