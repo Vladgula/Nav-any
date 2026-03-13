@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html">
+<head>
+  <title>ВВГУ.Ориентир</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+  <link rel="icon" type="image/x-icon" href="images/favicon.png">
+
+  <link rel="stylesheet" href="nullstyle.css">
+  <link rel="stylesheet" href="styles.css">
+
+  <script type="text/javascript" src="js/Plan_VVSU.js"></script>
+  <script type="text/javascript" src="../read_plan.js"></script>
+  <script type="text/javascript" src="../process_plan.js"></script>
+  <script type="text/javascript" src="../find_route.js"></script>
+  <script type="text/javascript" src="js/show_route.js" defer></script>
+  <script type="text/javascript" src="js/point_refs.js" defer></script>
+  <script type="text/javascript" src="js/autocomplete.js" defer></script>
+</head>
+
+<body>
+  <div class="background"> </div>
+  <div class="container">
+    <div class="header__logo">
+      <img src="images/logo.svg" alt=""/>
+    </div>
+    <div class="content">
+      <div class="references" hidden>
+        <div class="references__header">
+          <div class="references__back swipe-button"></div>
+          <div class="references__title">Справочник</div>
+        </div>
+        <div class="references__floor-line">
+          <div class="references__floor-icon"></div>
+          <ul class="references__floors">
+<!--            <li>1</li>-->
+<!--            <li>2</li>-->
+<!--            <li>3</li>-->
+<!--            <li>4</li>-->
+<!--            <li>1</li>-->
+<!--            <li>2</li>-->
+<!--            <li>3</li>-->
+<!--            <li>4</li>-->
+          </ul>
+        </div>
+        <ul class="references__list">
+<!--          <li>Вход 1</li>-->
+<!--          <li>Андерграунд</li>-->
+<!--          <li>ауд. 1301</li>-->
+        </ul>
+      </div>
+
+      <div class="navigator">
+        <div class="header">
+          <div class="header__title-line">
+            <div class="header__title">Ориентир</div>
+            <div class="header__handbook swipe-button"></div>
+          </div>
+          <div class="header__subtitle">Упрощенный навигатор по университету</div>
+        </div>
+        <div class="form">
+          <form name="frm">
+            <input type="text" id="from" placeholder="Откуда" class="form__input"/>
+            <input type="text" id="to" placeholder="Куда" class="form__input"/>
+            <button type="button" id="button" onclick="showRoute();" class="form__button">Проложить маршрут</button>
+          </form>
+          <div id="autocomplete" class="autocomplete"></div>
+          <div id="output" class="output" hidden>
+            <div class="output__header">
+              <div class="output__line"></div>
+              <div class="output__title">Маршрут</div>
+              <div class="output__item-container">
+                <div id="out-from" class="output__item">ауд. 4407</div>
+                <img src="images/arrow-icon.svg">
+                <div id="out-to" class="output__item">ауд. 4305</div>
+              </div>
+            </div>
+            <div id="output-container"></div>
+          </div>
+          <div id="error-text" hidden></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

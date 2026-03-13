@@ -1,0 +1,161 @@
+﻿<Plan building="VVSU">
+
+	<Building name="Главный корпус" id="1">
+
+		<!-- Как отметить <Exit> ? -->
+
+		<Floor id="building1_floor4" name="Этаж 4">
+			<!-- num= ??? как ввести номер этажа? -->
+
+			<Square name="Лестничная площадка" to="лестничной площадки">
+				<Bound dir="backward">
+					<Stair type="up" />
+					<Stair type="down" />
+				</Bound>
+				<Bound dir="right" type="window">
+					<Orient type="trash_bin" name="Урна для мусора" to="урны для мусора" />
+					<Orient type="rest+charge" name="Диваны с зарядкой" to="диванов с зарядкой" />
+				</Bound>
+				<Bound dir="forward">
+					<Orient type="door" name="Дверь" to="двери" />
+					<Orient type="info_desk" name="Плакат СВО" to="плаката СВО" />
+				</Bound>
+				<Bound dir="left">
+					<Part type="free">
+						<Joint id="1" />
+					</Part>
+					<Part type="wall">
+						<Orient type="fire_extinguisher" name="Огнетушитель" to="огнетушителя" />
+					</Part>
+				</Bound>
+			</Square>
+
+			<Square>
+				<Bound dir="backward" type="free">
+					<Joint id="1" />
+				</Bound>
+				<Bound dir="right" type="wall">
+					<Room num="1431" />
+					<Orient type="rest+charge" name="Диван с зарядкой" to="дивана с зарядкой" />
+					<Room num="1433" />
+				</Bound>
+				<Bound dir="forward">
+					<Part type="wall"> </Part>
+					<Part type="free">
+						<Joint id="2" />
+					</Part>
+				</Bound>
+				<Bound dir="left" type="wall">
+					<Room num="1426">
+						Преподавательская кафедры ИТС
+					</Room>
+					<Room num="1424" />
+				</Bound>
+			</Square>
+
+			<Corridor start="2" finish="3" name="Коридор" to="коридора"> <!-- добавил название-->
+				<Room wall="right" num="1435" />
+				<Room wall="left" num="1428" name="Подсобное помещение" />
+				<Toilet wall="left" num="1430" type="M" name="Мужской туалет" />
+				<Room wall="right" num="1437" />
+				<Room wall="left" num="1432" />
+				<Room wall="left" num="1434" />
+				<Room wall="right" num="1439" />
+				<Room wall="left" num="1436" />
+				<Room wall="right" num="1431" />
+				<Orient wall="right" type="info_desk" name="Информационный стенд кафедры" />
+				<Room wall="left" num="1438" />
+				<Room wall="right" num="1443">
+					Кафедра математики и моделирования
+				</Room>
+				<Room wall="right" num="1445" />
+				<Room wall="left" num="1440" />
+				<Room wall="right" num="1447" />
+				<Room wall="left" num="1442" />
+			</Corridor>
+
+			<Square>
+				<Bound dir="backward" type="free">
+					<Joint id="3" name_forward="Поворот налево" to_forward="поворота налево" name_backward="" />
+				</Bound>
+				<Bound dir="forward" type="free">
+					<Joint id="4" name_forward="" name_backward="Поворот направо" to_backward="поворота направо" />
+				</Bound>
+				<Bound dir="right" type="wall">
+
+				</Bound>
+				<Bound dir="left" type="free">
+					<Joint id="5" />
+				</Bound>
+
+			</Square>
+
+			<Square name="Зона отдыха" to="зоны отдыха" cat="rest">
+				<Bound type="free" dir="backward">
+					<Joint id="5" />
+				</Bound>
+				<Bound type="wall" dir="left">
+					<Orient type="rest" name="Диван" to="дивана"/>
+				</Bound>
+				<Bound type="wall" dir="right">
+					<Orient type="rest" name="Диван" to="дивана"/>
+				</Bound>
+				<Bound type="window" dir="forward">
+
+				</Bound>
+
+
+			</Square>
+
+			<Corridor start="4" finish="6">
+
+				огнетушитель (<Orient type="..." wall="left" />)
+				план эвакуации  (wall="left")
+
+				<Room wall="left" num="1444" />
+				<Room wall="right" num="1449" />
+				<Room wall="right" num="1451" />
+				<Room wall="left" num="1446">
+					Зав. кафедрой ИТС
+				</Room>
+				<Room wall="right" num="1453" />
+
+				схема этажа (wall="left")
+				информационный стенд кафедры ИТС (wall="left")
+
+				<Room wall="left" num="1448">
+					Преподавательская кафедры ИТС
+				</Room>
+
+			</Corridor>
+
+			<!-- доработка. вторая лестничная площадка на 4-ом этаже -->
+				
+			<Square name="Лестничная площадка" to="лестничной площадки">
+				<Bound dir="backward" type="free">
+					<Joint id="6" />
+				</Bound>
+				<Bound dir ="right" type="window">
+					<Orient type="rest" name="Диван" to="дивана" />
+				</Bound>
+				<Bound dir="forward" type="wall">
+					<Room num="1457" />
+					<Orient type="rest" name="Диван" to="дивана" />
+				</Bound>
+				<Bound dir="left">
+					<Stair type="up" />
+					<Stair type="down">
+						<Orient type="info_desk" name="Номер этажа" to="номера этажа"/> <!-- привязал информационный ориентир с номером этажа к самой лестнице-->
+					</Stair>
+				</Bound>
+				
+			</Square>
+
+
+
+
+		</Floor>
+
+	</Building>
+
+</Plan>
