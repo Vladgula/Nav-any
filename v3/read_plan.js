@@ -246,15 +246,15 @@ function read_plan ()
                         if (xml_floor_child.tagName == "Square") {
                             // обработка площадки
                             // TODO: получить атрибуты площадки
-
+                            read_square(xml_floor_child);
                         }
                         if (xml_floor_child.tagName == "Corridor") {
                             // обработка коридора
                             // TODO: получить атрибуты коридора
-                            
+                            read_corridor(xml_floor_child);
                             
 
-                            process_xml_node(xml_node, path_index, floor_num);
+                            //process_xml_node(xml_node, path_index, floor_num);
                             // TODO: вызвать функцию process_xml_node и передать ей
                             //   родительскую площадку/коридор
 
