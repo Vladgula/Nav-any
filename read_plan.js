@@ -228,79 +228,101 @@ function read_path (xml_node, path_index, floor_num)
             read_path(node_child, new_path_index, floor_num);
         }   
         else if (node_child.tagName)
-            process_xml_node(node_child, path_index, floor_num);
+            process_xml_node(node_child, path_index, floor_num); // написать аналог функции для Part
     }
+}
+
+function read_square (xml_node)  // TODO: передать параметры с информацией о родительских тегах
+{
+    for (xml_node_child of xml_node.childNodes) {
+        if (xml_node_child.tagName == "Bound") {
+            if (!("dir" in xml_node_child.attributes)) {
+                // вернуть ошибку                
+            }
+            else {
+                let dir = xml_node_child.attributes["dir"].nodeValue;
+                // ...
+                console.log(dir);
+                // ...
+                
+                // 1. Проверить, что внутри <Bound> есть теги
+                // 2. Если тегов нет, ничего не делать.
+
+                // 3. Если теги есть, то, если первый тег - это <Part>, то прочитать все <Part> 
+                // 4. Если первый тег - не <Part>, то прочитать все ориентиры
+
+                /*
+                for (xml_bound_child of xml_node_child.childNodes) {
+                    //console.log(xml_bound_child);
+                    if (xml_bound_child.tagName == "") {
+                }*/
+
+                console.log(xml_node_child.children.length);
+                    if (xml_node_child.children.length>0) {
+                        console.log(xml_node_child.children[0].tagName);
+
+                        // Добавил пункты 3. и 4.
+
+                        if (xml_node_child.children[0].tagName == "Part") {
+                            // Прочитать все Part-ы
+                            for (let i = 0; i < xml_node_child.children.length; i++) {
+                                if (xml_node_child.children[i].tagName == "Part") {
+                                    // Код для обработки Part
+                                    console.log(xml_node_child.children[i].tagName, "type:", xml_node_child.children[i].getAttribute("type"));
+                                }
+                            }
+                        }
+                        else {
+                            // Прочитать все ориентиры
+                            for (let i = 0; i < xml_node_child.children.length; i++) {
+                                // Код для обработки ориентиров
+                                console.log(xml_node_child.children[i].tagName, "name:", xml_node_child.children[i].getAttribute("name"), "type:", xml_node_child.children[i].getAttribute("type"));
+
+                            }
+                        }
+                    }
+            }
+        }
+    }
+}
+
+function read_corridor (xml_node) 
+{
+
 }
 
 // строит структуру данных "План здания"
 function read_plan ()
 {
     // TODO: добавить обработку ошибок во входном файле
-    let root = xmlDoc.getElementsByTagName("Plan")[0];
-    for (const plan_child of root.childNodes) {
-        if (plan_child.tagName == "Exit") {
-            // добавляем пункт типа "Выход"
-            let point_exit = {
-                floor: parseInt(plan_child.attributes["floor"].nodeValue),
-                id: plan_child.attributes["id"].nodeValue,
-                name: ("name" in plan_child.attributes ? plan_child.attributes["name"].nodeValue : "Выход"),
-                type: "Exit",
-                hidden: false,
-                edges: [],
-                fav: true,
-                cat: ("cat" in plan_child.attributes ? plan_child.attributes["cat"].nodeValue : "")
-            };
-            add_point(point_exit);
-        }
-        else if (plan_child.tagName == "Floor") {
-            floor_num = parseInt(plan_child.attributes["num"].nodeValue);
-            for (floor_child of plan_child.childNodes) {
-                if (floor_child.tagName == "Path") {
-                    // обрабатываем путь перемещения
-                    if (!("dir" in floor_child.attributes)) {
-                        alert("Поле dir отсутствует в корневом теге <Path>");
-                    }
-                    let dir_str = floor_child.attributes["dir"].nodeValue;
-                    let dir = motionDirForStr(dir_str);
-                    let path = {
-                        walls: ("walls" in floor_child.attributes ? floor_child.attributes["walls"].nodeValue : "no"),
-                        dir: dir, 
-                        path_points: [],
-                    };
-                    // добавляем путь
-                    plan.paths.push(path);
-                    let path_index = plan.paths.length - 1;
-                    // добавляем начальный пункт к пути
-                    // тут важно указать этаж, поскольку пункт может оказаться
-                    //   лестницей или лифтом, для которых идентификатор один и тот же на разных этажах
-                    if (!("start" in floor_child.attributes)) {
-                        alert("Поле start отсутствует в корневом теге <Path>");
-                    }
-                    let point_index = get_point_by_id(floor_child.attributes["start"].nodeValue, floor_num);
-                    add_point_to_path(point_index, path_index);
-                    // читаем путь
-                    read_path(floor_child, path_index, floor_num);
+    let xml_plan = xmlDoc.getElementsByTagName("Plan")[0];  // корневой тег - <Plan>
+    for (const xml_plan_child of xml_plan.childNodes) {  // перечисление вложенных тегов
+        if (xml_plan_child.tagName == "Building") {
+            // TODO: получить атрибуты корпуса
+            for (xml_floor of xml_plan_child.childNodes) {
+                if (xml_floor.tagName == "Floor") {
+                    for (const xml_floor_child of xml_floor.childNodes) {
+                        if (xml_floor_child.tagName == "Square") {
+                            // обработка площадки
+                            // TODO: получить атрибуты площадки
+                            read_square(xml_floor_child);
+                        }
+                        if (xml_floor_child.tagName == "Corridor") {
+                            // обработка коридора
+                            // TODO: получить атрибуты коридора
+                            read_corridor(xml_floor_child);
+                            
+
+                            //process_xml_node(xml_node, path_index, floor_num);
+                            // TODO: вызвать функцию process_xml_node и передать ей
+                            //   родительскую площадку/коридор
+
+                            // можно вынести в отдельную функцию read_corridor / read_square
+
+                        }
+                    }                    
                 }
-                else if (floor_child.tagName)
-                    process_xml_node(floor_child, -1, floor_num);
             }
-        }
-        else if (plan_child.tagName == "Card") {
-            let point_id = plan_child.attributes["point"].nodeValue;
-            let card_text = plan_child.innerHTML;
-            plan.cards.set(point_id, card_text);
-        }
-        else if (plan_child.tagName == "Category") {
-            let category_id = plan_child.attributes["id"].nodeValue;
-            let category_name = plan_child.attributes["name"].nodeValue;
-            let category = {
-                id: category_id,
-                name: category_name,
-                points: []
-            };
-            plan.categories.push(category);
-            let category_index = plan.categories.length - 1;
-            plan.category_by_id.set(category_id, category_index);
         }
     }
 }
