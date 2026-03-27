@@ -28,6 +28,17 @@ let plan = {
     cards: new Map(),
     categories: [],
     category_by_id: new Map()
+
+/*
+
+  ??? Добавить joint_by_id ??? 
+       и массив joints?
+
+   (у joint'а будет индекс и строковый id)
+
+   завести массив площадок
+   у каждой площадки будет список смежности edges - смежные площадки
+*/
 };
 
 const motionDir = ["up", "right", "down", "left"];
@@ -228,7 +239,7 @@ function read_path (xml_node, path_index, floor_num)
             read_path(node_child, new_path_index, floor_num);
         }   
         else if (node_child.tagName)
-            process_xml_node(node_child, path_index, floor_num);
+            process_xml_node(node_child, path_index, floor_num); // написать аналог функции для Part
     }
 }
 
@@ -247,7 +258,8 @@ function read_square (xml_node)  // TODO: передать параметры с
                 
                 // 1. Проверить, что внутри <Bound> есть теги
                 // 2. Если тегов нет, ничего не делать.
-                // 3. Если теги есть, то, если первый тег - это <Part>, то прочитать все <Part>
+
+                // 3. Если теги есть, то, если первый тег - это <Part>, то прочитать все <Part> 
                 // 4. Если первый тег - не <Part>, то прочитать все ориентиры
 
                 /*
@@ -255,6 +267,31 @@ function read_square (xml_node)  // TODO: передать параметры с
                     //console.log(xml_bound_child);
                     if (xml_bound_child.tagName == "") {
                 }*/
+
+                console.log(xml_node_child.children.length);
+                    if (xml_node_child.children.length>0) {
+                        console.log(xml_node_child.children[0].tagName);
+
+                        // Добавил пункты 3. и 4.
+
+                        if (xml_node_child.children[0].tagName == "Part") {
+                            // Прочитать все Part-ы
+                            for (let i = 0; i < xml_node_child.children.length; i++) {
+                                if (xml_node_child.children[i].tagName == "Part") {
+                                    // Код для обработки Part
+                                    console.log(xml_node_child.children[i].tagName, "type:", xml_node_child.children[i].getAttribute("type"));
+                                }
+                            }
+                        }
+                        else {
+                            // Прочитать все ориентиры
+                            for (let i = 0; i < xml_node_child.children.length; i++) {
+                                // Код для обработки ориентиров
+                                console.log(xml_node_child.children[i].tagName, "name:", xml_node_child.children[i].getAttribute("name"), "type:", xml_node_child.children[i].getAttribute("type"));
+
+                            }
+                        }
+                    }
             }
         }
     }
