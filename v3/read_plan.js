@@ -19,29 +19,29 @@ else  // Internet Explorer
        paths - массив путей перемещения (путь: тип пути, направление перемещения, массив пунктов в пути)
        point_by_id - ассоциативный массив (ключ - строковый id, значение - индекс пункта)
 */
-let plan = {
-    points: [],
-    paths: [],
-    point_by_id: new Map(),
-    stairs_by_id: new Map(),
-    elevator_by_id: new Map(),
-    cards: new Map(),
+
+//структуру написать как дерево
+
+let plan = { //18.09.2026
+    squares: [],          // площадки
+    bounds: [],           // стыки (joint) . или добавить как часть площадки
+    orients: [],          // все ориентиры (плоский список)
+    corridors: [],        // коридоры
+    stairs: [],           // лестницы
+    exits: [],            // выходы
+    blocks: [],           // отсеки . этаж
+
+    square_by_id: new Map(), //не нужно
+    bound_by_id: new Map(), //не нужно
+    orient_by_id: new Map(), //не нужно
+    block_by_id: new Map(), //не нужно
+
     categories: [],
-    category_by_id: new Map()
-
-/*
-
-  ??? Добавить joint_by_id ??? 
-       и массив joints?
-
-   (у joint'а будет индекс и строковый id)
-
-   завести массив площадок
-   у каждой площадки будет список смежности edges - смежные площадки
-*/
+    category_by_id: new Map(),
+    cards: new Map()
 };
 
-const motionDir = ["up", "right", "down", "left"];
+const motionDir = ["forward", "left", "right", "backward"];
 
 const motionDirForStr = str => {
     return motionDir.indexOf(str);
@@ -58,19 +58,13 @@ function get_elevator_point_id (point_id, floor)
 }
 
 // находит пункт по идентификатору, указанному во входном файле
-function get_point_by_id (point_id, floor)
+function get_square_by_id (square_id)
 {
-    stairs_point_id = get_stairs_point_id(point_id, floor);
-    elevator_point_id = get_elevator_point_id(point_id, floor);
-    let point_index;
-    if (plan.point_by_id.has(stairs_point_id))
-        point_index = plan.point_by_id.get(stairs_point_id);
-    else if (plan.point_by_id.has(stairs_point_id))
-        point_index = plan.point_by_id.get(elevator_point_id);
-    else
-        point_index = plan.point_by_id.get(point_id);
-    if (point_index == undefined) { alert("Ошибка: пункт с id " + point_id + " на этаже " + floor + " не найден!"); }
-    return point_index;
+    let square_index = plan.square_by_id.get(square_id);
+    if (square_index == undefined) {
+        console.warn("Ошибка: площадка с id " + square_id + " не найдена");
+    }
+    return square_index;
 }
 
 // добавляет пункт к плану
@@ -101,14 +95,14 @@ function add_point_to_path (point_index, path_index)
 // обрабатывает узел xml-дерева с пунктом
 function process_xml_node (xml_node, path_index, floor_num)
 {
-    let point = {
+    let point = { //
         floor: floor_num,
         id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
         name: ("name" in xml_node.attributes ? xml_node.attributes["name"].nodeValue : ""),
         type: "",
         wall: ("wall" in xml_node.attributes ? xml_node.attributes["wall"].nodeValue : ""),
         hidden: false,  //(xml_node.attributes["show_name"] != "1"),
-        edges: [],
+        edges: [], //границы для площадки
         to: ("to" in xml_node.attributes ? xml_node.attributes["to"].nodeValue : ""),
         fav: ("fav" in xml_node.attributes),
         cat: ("cat" in xml_node.attributes ? xml_node.attributes["cat"].nodeValue : "")
@@ -201,7 +195,7 @@ function rotate_dir (dir, rotate_str)
         new_dir = (dir + 3) % 4;
     else if (rotate_str == "right")
         new_dir = (dir + 1) % 4;
-    else if (rotate_str == "back")
+    else if (rotate_str == "backward")
         new_dir = (dir + 2) % 4;
     return new_dir;
 }
@@ -303,7 +297,7 @@ function read_corridor (xml_node)
 }
 
 // строит структуру данных "План здания"
-function read_plan ()
+function read_plan () //законцентрироваться
 {
     // TODO: добавить обработку ошибок во входном файле
     let xml_plan = xmlDoc.getElementsByTagName("Plan")[0];  // корневой тег - <Plan>
@@ -339,4 +333,4 @@ function read_plan ()
 }
 
 read_plan();
-//console.log(plan);
+console.log(plan);
