@@ -19,318 +19,316 @@ else  // Internet Explorer
        paths - массив путей перемещения (путь: тип пути, направление перемещения, массив пунктов в пути)
        point_by_id - ассоциативный массив (ключ - строковый id, значение - индекс пункта)
 */
+let plan = {
+    squares: [],          // массив площадок (квадратов/коридоров/лестниц)
+    bounds: [],           // массив стыков (<Joint> и <Exit>)
+    orients: [],          // все ориентиры одним плоским списком
+    corridors: [],        // массив коридоров (они длиннее площадок)
+    stairs: [],           // массив лестниц
+    exits: [],            // массив выходов из здания
+    blocks: [],           // массив отсеков (этаж + корпус)
 
-//структуру написать как дерево
+    // ассоциативные массивы: строковый id -> индекс в массиве
+    square_by_id: new Map(),
+    bound_by_id: new Map(),
+    orient_by_id: new Map(),
+    corridor_by_id: new Map(),
+    stairs_by_id: new Map(),
+    block_by_id: new Map(),
 
-let plan = { //18.09.2026
-    squares: [],          // площадки
-    bounds: [],           // стыки (joint) . или добавить как часть площадки
-    orients: [],          // все ориентиры (плоский список)
-    corridors: [],        // коридоры
-    stairs: [],           // лестницы
-    exits: [],            // выходы
-    blocks: [],           // отсеки . этаж
-
-    square_by_id: new Map(), //не нужно
-    bound_by_id: new Map(), //не нужно
-    orient_by_id: new Map(), //не нужно
-    block_by_id: new Map(), //не нужно
-
-    categories: [],
-    category_by_id: new Map(),
-    cards: new Map()
+    cards: new Map(),         // карточки (текст для ориентира)
+    categories: [],           // категории ориентиров
+    category_by_id: new Map()
 };
 
-const motionDir = ["forward", "left", "right", "backward"];
 
+const motionDir = ["up", "right", "down", "left"]; //направления сторон
 const motionDirForStr = str => {
     return motionDir.indexOf(str);
 }
 
-function get_stairs_point_id (point_id, floor)
+function get_stairs_point_id (point_id, floor) //генерация id для лестниц (пригодятся, если понадобится совместимость)
 {
     return point_id + "_stairs_" + String(floor);
 }
 
-function get_elevator_point_id (point_id, floor)
+function get_elevator_point_id (point_id, floor) //генерация id для лифтов
 {
     return point_id + "_elevator_" + String(floor);
 }
 
-// находит пункт по идентификатору, указанному во входном файле
-function get_square_by_id (square_id)
-{
-    let square_index = plan.square_by_id.get(square_id);
-    if (square_index == undefined) {
-        console.warn("Ошибка: площадка с id " + square_id + " не найдена");
-    }
-    return square_index;
-}
+// Что ДЕЛАЕТ: Читает тег <Square> — площадку. Внутри перебирает <Side dir="..."> (стороны), а внутри каждой стороны <Part> или сразу <Orient>
+// Логика:
+//Ищем <Side> внутри <Square>
+//Если у <Side> нет атрибута dir — пишем ошибку (в консоль или alert)
+//Если dir есть — сохраняем в side.dir
+//Если первый ребёнок <Side> — <Part>, читаем все Part через read_part
+//Если первый ребёнок — не <Part>, читаем всех детей как ориентиры через read_orient
 
-// добавляет пункт к плану
-// возвращает индекс пункта
-function add_point (point)
+function read_square (xml_node, floor_num, block_id)
 {
-    plan.points.push(point);
-    let point_index = plan.points.length - 1;
-    plan.point_by_id.set(point.id, point_index);
-    
-    if (point.cat) {
-        //console.log(plan.category_by_id.get(point.cat));
-        let category_index = plan.category_by_id.get(point.cat);
-        //console.log(point.cat);
-        //console.log(category_index);
-        plan.categories[category_index].points.push(point_index);
-    }
-
-    return point_index;
-}
-
-// добавляет пункт к пути
-function add_point_to_path (point_index, path_index)
-{
-    plan.paths[path_index].path_points.push(point_index);
-}
-
-// обрабатывает узел xml-дерева с пунктом
-function process_xml_node (xml_node, path_index, floor_num)
-{
-    let point = { //
-        floor: floor_num,
+    // создаём объект площадки
+    let square = {
         id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
         name: ("name" in xml_node.attributes ? xml_node.attributes["name"].nodeValue : ""),
-        type: "",
-        wall: ("wall" in xml_node.attributes ? xml_node.attributes["wall"].nodeValue : ""),
-        hidden: false,  //(xml_node.attributes["show_name"] != "1"),
-        edges: [], //границы для площадки
-        to: ("to" in xml_node.attributes ? xml_node.attributes["to"].nodeValue : ""),
-        fav: ("fav" in xml_node.attributes),
-        cat: ("cat" in xml_node.attributes ? xml_node.attributes["cat"].nodeValue : "")
-    };    
-    // добавляем новый пункт
-    let point_index;
-    if (point.id && plan.point_by_id.has(point.id)) {  // если пункт с таким id уже есть
-        point_index = get_point_by_id(point.id, floor_num);        
-    }
-    else {
-        let node_tag = xml_node.tagName;
-        point.type = node_tag;
-        if (node_tag == "Point") {
-            point_index = add_point(point);
-        }
-        else if (node_tag == "Room") {
-            if (point.name == "")
-                point.name = point.id;
-            point.hidden = false;
-            point_index = add_point(point);
-        }
-        else if (node_tag == "Stairs") {
-            let stairs_id = point.id;
-            let stairs_point_id = get_stairs_point_id(stairs_id, floor_num);
-            point.id = stairs_point_id;
-            point.name = "Лестница";
-            point.hidden = false;
-            point_index = add_point(point);
-            if (!plan.stairs_by_id.has(stairs_id))
-                plan.stairs_by_id.set(stairs_id, []);
-            plan.stairs_by_id.get(stairs_id).push(point_index);
-        } 
-        else if (node_tag == "Elevator") {
-            let elevator_id = point.id;
-            let elevator_point_id = get_elevator_point_id(elevator_id, floor_num);
-            point.id = elevator_point_id;
-            point.name = "Лифт";
-            point.hidden = false;
-            point_index = add_point(point);
-            if (!plan.elevator_by_id.has(elevator_id))
-                plan.elevator_by_id.set(elevator_id, []);
-            plan.elevator_by_id.get(elevator_id).push(point_index);
-        }
-        else if (node_tag == "Wall") {
-            point_index = add_point(point);
-        }
-        else if (node_tag == "Door") {
-            point_index = add_point(point);
-        }
-        else if (node_tag == "Toilet") {
-            point_index = add_point(point);
-        }
-        else if (node_tag == "Joint") {
-            point_index = add_point(point);            
-            point.path = path_index;
-            if ("text_forward" in xml_node.attributes)
-                point.text_forward = xml_node.attributes["text_forward"].nodeValue;
-            if ("text_backward" in xml_node.attributes)
-                point.text_backward = xml_node.attributes["text_backward"].nodeValue;
-            if ("text_left" in xml_node.attributes)
-                point.text_left = xml_node.attributes["text_left"].nodeValue;
-            if ("text_right" in xml_node.attributes)
-                point.text_right = xml_node.attributes["text_right"].nodeValue;
+        floor: floor_num,
+        block_id: block_id,
+        sides: [],       // массив сторон (forward/left/right/backward)
+        orients: [],     // ориентиры, лежащие прямо на площадке (вне Side)
+        edges: []        // список смежности (заполнит process_plan)
+    };
 
-            if ("photo_forward" in xml_node.attributes)
-                point.photo_forward = xml_node.attributes["photo_forward"].nodeValue;
-            if ("photo_backward" in xml_node.attributes)
-                point.photo_backward = xml_node.attributes["photo_backward"].nodeValue;
-            if ("photo_left" in xml_node.attributes)
-                point.photo_left = xml_node.attributes["photo_left"].nodeValue;
-            if ("photo_right" in xml_node.attributes)
-                point.photo_right = xml_node.attributes["photo_right"].nodeValue;
+    // перебираем всех детей <Square>
+    for (let child of xml_node.childNodes) {
+        if (child.tagName == "Side") {
+            // читаем сторону
+            let side = read_side(child, square);
+            if (side) square.sides.push(side);
         }
-        else {
-            alert(node_tag);
+        else if (child.tagName == "Orient" || child.tagName == "Room") {
+            // ориентир прямо на площадке (без Side)
+            let orient = read_orient(child);
+            square.orients.push(orient);
+        }
+        else if (child.tagName == "Joint" || child.tagName == "Exit") {
+            // стык/выход прямо на площадке
+            read_bound(child, square, null);
         }
     }
-    // добавляем пункт к пути
-    if (path_index != -1)
-        add_point_to_path(point_index, path_index);
+
+    // добавляем площадку в plan и в индекс по id
+    plan.squares.push(square);
+    if (square.id) plan.square_by_id.set(square.id, plan.squares.length - 1);
+    return square;
 }
 
-// возвращает номер направления после поворота
-function rotate_dir (dir, rotate_str)
+// ЧТО ДЕЛАЕТ: читает одну сторону <Side> площадки. Проверяет наличие dir. Внутри читает <Part> или <Orient>
+
+function read_side (xml_node, square)
 {
-    let new_dir;
-    if (rotate_str == "forward")
-        new_dir = dir;
-    else if (rotate_str == "left")
-        new_dir = (dir + 3) % 4;
-    else if (rotate_str == "right")
-        new_dir = (dir + 1) % 4;
-    else if (rotate_str == "backward")
-        new_dir = (dir + 2) % 4;
-    return new_dir;
-}
-
-// преобразует информацию о пути из xml в нашу СД
-function read_path (xml_node, path_index, floor_num)
-{
-    for (node_child of xml_node.childNodes) {
-        if (node_child.tagName == "Path") {
-            // обрабатываем путь перемещения
-            // let point_index = get_point_by_id(node_child.attributes["start"].nodeValue, floor_num);
-            // в качестве стартового пункта пути -- пункт родительского пути перед новым путем
-            let point_index = plan.paths[path_index].path_points[plan.paths[path_index].path_points.length - 1];
-            let rotate_str = node_child.attributes["rotate"].nodeValue;
-            let parent_path_dir = plan.paths[path_index].dir;
-            let dir = rotate_dir(parent_path_dir, rotate_str);
-            let path = {
-                walls: ("walls" in node_child.attributes ? node_child.attributes["walls"].nodeValue : "no"),
-                dir: dir, 
-                path_points: [point_index],
-            };
-
-            if ("scheme_text_backward" in node_child.attributes)
-                path.scheme_text_backward = node_child.attributes["scheme_text_backward"].nodeValue;
-            if ("scheme_text_forward" in node_child.attributes)
-                path.scheme_text_forward = node_child.attributes["scheme_text_forward"].nodeValue;
-
-            if ("scheme_photo" in node_child.attributes)
-                path.scheme_photo = node_child.attributes["scheme_photo"].nodeValue;
-    
-            // добавляем путь
-            plan.paths.push(path);
-            let new_path_index = plan.paths.length - 1;
-            // читаем путь, внутренний по отношению к текущему пути
-            read_path(node_child, new_path_index, floor_num);
-        }   
-        else if (node_child.tagName)
-            process_xml_node(node_child, path_index, floor_num); // написать аналог функции для Part
+    // проверяем, есть ли атрибут dir — без него сторона бессмысленна
+    if (!("dir" in xml_node.attributes)) {
+        console.warn("Ошибка: у <Side> нет атрибута dir");
+        return null;
     }
-}
+    let dir = xml_node.attributes["dir"].nodeValue;
 
-function read_square (xml_node)  // TODO: передать параметры с информацией о родительских тегах
-{
-    for (xml_node_child of xml_node.childNodes) {
-        if (xml_node_child.tagName == "Bound") {
-            if (!("dir" in xml_node_child.attributes)) {
-                // вернуть ошибку                
-            }
-            else {
-                let dir = xml_node_child.attributes["dir"].nodeValue;
-                // ...
-                console.log(dir);
-                // ...
-                
-                // 1. Проверить, что внутри <Bound> есть теги
-                // 2. Если тегов нет, ничего не делать.
+    // объект стороны
+    let side = {
+        dir: dir,        // forward / left / right / backward
+        parts: [],       // части стороны
+        orients: []      // ориентиры, лежащие прямо на стороне
+    };
 
-                // 3. Если теги есть, то, если первый тег - это <Part>, то прочитать все <Part> 
-                // 4. Если первый тег - не <Part>, то прочитать все ориентиры
-
-                /*
-                for (xml_bound_child of xml_node_child.childNodes) {
-                    //console.log(xml_bound_child);
-                    if (xml_bound_child.tagName == "") {
-                }*/
-
-                console.log(xml_node_child.children.length);
-                    if (xml_node_child.children.length>0) {
-                        console.log(xml_node_child.children[0].tagName);
-
-                        // Добавил пункты 3. и 4.
-
-                        if (xml_node_child.children[0].tagName == "Part") {
-                            // Прочитать все Part-ы
-                            for (let i = 0; i < xml_node_child.children.length; i++) {
-                                if (xml_node_child.children[i].tagName == "Part") {
-                                    // Код для обработки Part
-                                    console.log(xml_node_child.children[i].tagName, "type:", xml_node_child.children[i].getAttribute("type"));
-                                }
-                            }
-                        }
-                        else {
-                            // Прочитать все ориентиры
-                            for (let i = 0; i < xml_node_child.children.length; i++) {
-                                // Код для обработки ориентиров
-                                console.log(xml_node_child.children[i].tagName, "name:", xml_node_child.children[i].getAttribute("name"), "type:", xml_node_child.children[i].getAttribute("type"));
-
-                            }
-                        }
-                    }
-            }
-        }
-    }
-}
-
-function read_corridor (xml_node) 
-{
-
-}
-
-// строит структуру данных "План здания"
-function read_plan () //законцентрироваться
-{
-    // TODO: добавить обработку ошибок во входном файле
-    let xml_plan = xmlDoc.getElementsByTagName("Plan")[0];  // корневой тег - <Plan>
-    for (const xml_plan_child of xml_plan.childNodes) {  // перечисление вложенных тегов
-        if (xml_plan_child.tagName == "Building") {
-            // TODO: получить атрибуты корпуса
-            for (xml_floor of xml_plan_child.childNodes) {
-                if (xml_floor.tagName == "Floor") {
-                    for (const xml_floor_child of xml_floor.childNodes) {
-                        if (xml_floor_child.tagName == "Square") {
-                            // обработка площадки
-                            // TODO: получить атрибуты площадки
-                            read_square(xml_floor_child);
-                        }
-                        if (xml_floor_child.tagName == "Corridor") {
-                            // обработка коридора
-                            // TODO: получить атрибуты коридора
-                            read_corridor(xml_floor_child);
-                            
-
-                            //process_xml_node(xml_node, path_index, floor_num);
-                            // TODO: вызвать функцию process_xml_node и передать ей
-                            //   родительскую площадку/коридор
-
-                            // можно вынести в отдельную функцию read_corridor / read_square
-
-                        }
-                    }                    
+    // если у стороны есть дети — читаем их
+    if (xml_node.children.length > 0) {
+        // если первый ребёнок — Part, читаем все Part
+        if (xml_node.children[0].tagName == "Part") {
+            for (let child of xml_node.childNodes) {
+                if (child.tagName == "Part") {
+                    side.parts.push(read_part(child, square));
                 }
             }
+        }
+        else {
+            // иначе — читаем всех детей как ориентиры
+            for (let child of xml_node.childNodes) {
+                if (child.tagName == "Orient" || child.tagName == "Room") {
+                    side.orients.push(read_orient(child));
+                }
+                else if (child.tagName == "Joint" || child.tagName == "Exit") {
+                    read_bound(child, square, side);
+                }
+            }
+        }
+    }
+
+    return side;
+}
+
+// ЧТО ДЕЛАЕТ: читает <Part type="wall|window|free">. Внутри — ориентиры
+
+function read_part (xml_node, square)
+{
+    let part = {
+        type: ("type" in xml_node.attributes ? xml_node.attributes["type"].nodeValue : "free"),
+        orients: []       // ориентиры внутри этой части
+    };
+
+    // внутри Part могут быть Orient/Room/Joint
+    for (let child of xml_node.childNodes) {
+        if (child.tagName == "Orient" || child.tagName == "Room") {
+            part.orients.push(read_orient(child));
+        }
+        else if (child.tagName == "Joint" || child.tagName == "Exit") {
+            read_bound(child, square, null);
+        }
+    }
+
+    return part;
+}
+
+// ЧТО ДЕЛАЕТ: читает ориентир <Orient> или <Room>. Возвращает объект и отправляет его в plan.orients
+
+function read_orient (xml_node)
+{
+    let orient = {
+        id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
+        type: xml_node.tagName,    // Orient или Room
+        name: ("name" in xml_node.attributes ? xml_node.attributes["name"].nodeValue : ""),
+        text: ("text" in xml_node.attributes ? xml_node.attributes["text"].nodeValue : ""),
+        no: ("no" in xml_node.attributes ? xml_node.attributes["no"].nodeValue : ""),
+        key: ("key" in xml_node.attributes),
+        wall: ("wall" in xml_node.attributes ? xml_node.attributes["wall"].nodeValue : "")
+    };
+
+    // добавляем в общий список и в индекс
+    plan.orients.push(orient);
+    if (orient.id) plan.orient_by_id.set(orient.id, plan.orients.length - 1);
+    return orient;
+}
+
+// ЧТО ДЕЛАЕТ: читает стык <Joint> или <Exit>. Складывает в plan.bounds
+
+function read_bound (xml_node, square, side)
+{
+    let bound = {
+        id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
+        type: xml_node.tagName,  // Joint или Exit
+        text: ("text" in xml_node.attributes ? xml_node.attributes["text"].nodeValue : ""),
+        photo: ("photo" in xml_node.attributes ? xml_node.attributes["photo"].nodeValue : ""),
+        square_id: square ? square.id : "",
+        side_dir: side ? side.dir : "",
+        edges: []   // заполнит process_plan
+    };
+
+    plan.bounds.push(bound);
+    if (bound.id) plan.bound_by_id.set(bound.id, plan.bounds.length - 1);
+
+    // если это выход — продублируем в exits
+    if (bound.type == "Exit") plan.exits.push(bound);
+
+    return bound;
+}
+
+// ЧТО ДЕЛАЕТ: читает <Corridor> — коридор. У него есть start, finish, finish_text, finish_photo, floor, building
+
+function read_corridor (xml_node, floor_num, block_id)
+{
+    let corridor = {
+        id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
+        start: ("start" in xml_node.attributes ? xml_node.attributes["start"].nodeValue : ""),
+        finish: ("finish" in xml_node.attributes ? xml_node.attributes["finish"].nodeValue : ""),
+        finish_text: ("finish_text" in xml_node.attributes ? xml_node.attributes["finish_text"].nodeValue : ""),
+        finish_photo: ("finish_photo" in xml_node.attributes ? xml_node.attributes["finish_photo"].nodeValue : ""),
+        floor: floor_num,
+        block_id: block_id,
+        orients: [],
+        edges: []
+    };
+
+    // внутри коридора — ориентиры с атрибутом wall (left/right)
+    for (let child of xml_node.childNodes) {
+        if (child.tagName == "Orient" || child.tagName == "Room") {
+            corridor.orients.push(read_orient(child));
+        }
+    }
+
+    plan.corridors.push(corridor);
+    if (corridor.id) plan.corridor_by_id.set(corridor.id, plan.corridors.length - 1);
+    return corridor;
+}
+
+// ЧТО ДЕЛАЕТ: читает <Stairs> — лестницу. У неё floor_down, floor_up, text_up, text_down
+
+function read_stairs (xml_node)
+{
+    let stairs = {
+        id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
+        floor_down: ("floor_down" in xml_node.attributes ? parseInt(xml_node.attributes["floor_down"].nodeValue) : 0),
+        floor_up: ("floor_up" in xml_node.attributes ? parseInt(xml_node.attributes["floor_up"].nodeValue) : 0),
+        building: ("building" in xml_node.attributes ? parseInt(xml_node.attributes["building"].nodeValue) : 0),
+        text_up: ("text_up" in xml_node.attributes ? xml_node.attributes["text_up"].nodeValue : ""),
+        text_down: ("text_down" in xml_node.attributes ? xml_node.attributes["text_down"].nodeValue : "")
+    };
+
+    plan.stairs.push(stairs);
+    if (stairs.id) plan.stairs_by_id.set(stairs.id, plan.stairs.length - 1);
+    return stairs;
+}
+
+// ЧТО ДЕЛАЕТ: выносим логику чтения <Category> из read_plan в отдельную функцию
+
+function read_category (xml_node)
+{
+    let category_id = xml_node.attributes["id"].nodeValue;
+    let category_name = xml_node.attributes["name"].nodeValue;
+    let category = {
+        id: category_id,
+        name: category_name,
+        points: []    // заполнится позже, когда ориентиры будут добавляться
+    };
+    plan.categories.push(category);
+    plan.category_by_id.set(category_id, plan.categories.length - 1);
+}
+
+// Финальная функция
+// ЧТО ДЕЛАЕТ: корневой цикл. Вместо <Floor> внутри <Plan> теперь <Block> (отсек = этаж + корпус), 
+// внутри — <Square>, <Corridor>, <Stairs>. <Exit> и <Card> и <Category> — на уровне <Plan>.
+
+function read_plan ()
+{
+    let xml_plan = xmlDoc.getElementsByTagName("Plan")[0];
+    if (!xml_plan) { alert("Нет корневого тега <Plan>"); return; }
+
+    // <Plan> содержит <Building> и (опционально) <Card>/<Category>/<Exit>
+    for (let plan_child of xml_plan.childNodes) {
+
+        if (plan_child.tagName == "Building") {
+            // внутри <Building> — <Block> (отсеки/этажи)
+            for (let building_child of plan_child.childNodes) {
+
+                if (building_child.tagName == "Block") {
+                    let floor_num = ("floor" in building_child.attributes
+                        ? parseInt(building_child.attributes["floor"].nodeValue) : 0);
+                    let block_id = ("id" in building_child.attributes
+                        ? building_child.attributes["id"].nodeValue : "");
+
+                    // регистрируем отсек в plan.blocks
+                    plan.blocks.push({ id: block_id, floor: floor_num });
+                    if (block_id) plan.block_by_id.set(block_id, plan.blocks.length - 1);
+
+                    // проходим по детям отсека: Square / Corridor / Stairs
+                    for (let block_child of building_child.childNodes) {
+                        if (block_child.tagName == "Square") {
+                            read_square(block_child, floor_num, block_id);
+                        }
+                        else if (block_child.tagName == "Corridor") {
+                            read_corridor(block_child, floor_num, block_id);
+                        }
+                        else if (block_child.tagName == "Stairs") {
+                            read_stairs(block_child);
+                        }
+                    }
+                }
+            }
+        }
+        // <Exit> — выход (на уровне всего здания) — пока у тебя нет, но пусть будет
+        else if (plan_child.tagName == "Exit") {
+            read_bound(plan_child, null, null);
+        }
+        // <Card> — карточка ориентира
+        else if (plan_child.tagName == "Card") {
+            let point_id = plan_child.attributes["point"].nodeValue;
+            plan.cards.set(point_id, plan_child.innerHTML);
+        }
+        // <Category> — категория ориентиров
+        else if (plan_child.tagName == "Category") {
+            read_category(plan_child);
         }
     }
 }
 
 read_plan();
-console.log(plan);
+
+console.log("=== read_plan: plan ===", plan);   // отладка
