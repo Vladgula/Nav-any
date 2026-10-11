@@ -13,6 +13,52 @@ function process_plan ()
     }
     // каждый стык - это вершина графа
     //   (один и тот же стык в рамках разных площадок - это две разные вершины)
+    for (let bound_index = 0; bound_index < plan.bounds.length; bound_index++) {
+        vertex = {
+            type: "joint",  // тип вершины
+            id: plan.bounds[bound_index].id,  // id стыка
+            index: plan.vertices.length,  // индекс вершины
+        }
+        plan.vertices.push(vertex);
+        plan.bounds[bound_index].vertex_index = vertex.index;
+    }
+    // каждый ориентир - это вершина графа
+    for (let orient_index = 0; orient_index < plan.orients.length; orient_index++) {
+        vertex = {
+            type: "orient",  // тип вершины
+            id: plan.orients[orient_index].id,  // id ориентира
+            index: plan.vertices.length,  // индекс вершины
+        }
+        plan.vertices.push(vertex);
+        plan.orients[orient_index].vertex_index = vertex.index;
+    }
+
+    // Задаём рёбра графа...
+    // инициализация списков смежности
+    for (let vertex_index = 0; vertex_index < plan.vertices.length; vertex_index++) {
+        plan.edges.push(Array());
+    }
+    // любые два стыка с одинаковыми идентификаторами соединяются ребром
+    for (let [joint_id, joints_list] of plan.joints_by_id) {
+        if (joints_list.length == 2) {
+            //console.log(joints_list);
+            joint_index1 = joints_list[0];
+            joint_index2 = joints_list[1];
+            vertex_index1 = plan.bounds[joint_index1].vertex_index;
+            vertex_index2 = plan.bounds[joint_index2].vertex_index;
+            plan.edges[vertex_index1].push(vertex_index2);
+            plan.edges[vertex_index2].push(vertex_index1);
+        }
+    }
+    // любая площадка соединяется (двусторонними) рёбрами со всеми стыками,
+    //   находящимися на этой площадке
+    // TODO
+
+    // любая площадка соединяется (двусторонними) рёбрами со всеми ориентирами,
+    //   находящимися на этой площадке
+    // TODO
+
+
 
     // ??? 
     // как сейчас написан read_plan: bound_by_id будет соответствовать только

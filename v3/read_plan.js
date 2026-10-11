@@ -212,14 +212,9 @@ function read_bound (xml_node, square, side)
 
     // если это стык - добавим в joints_by_id
     if (bound.type == "Joint") {
-       // console.log(bound.id)
-       // console.log(plan.joints_by_id);
         if (!plan.joints_by_id.has(bound.id)) {
-       //     console.log("insert");
             plan.joints_by_id.set(bound.id, Array());
         }
-       // console.log(plan.joints_by_id.get(bound.id));
-
         plan.joints_by_id.get(bound.id).push(plan.bounds.length - 1);
     }
 
