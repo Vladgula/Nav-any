@@ -35,6 +35,8 @@ let plan = {
     corridor_by_id: new Map(),
     stairs_by_id: new Map(),
     block_by_id: new Map(),
+    // строковый id -> список индексов стыков в массиве bounds
+    joints_by_id: new Map(),
 
     cards: new Map(),         // карточки (текст для ориентира)
     categories: [],           // категории ориентиров
@@ -207,6 +209,19 @@ function read_bound (xml_node, square, side)
 
     plan.bounds.push(bound);
     if (bound.id) plan.bound_by_id.set(bound.id, plan.bounds.length - 1);
+
+    // если это стык - добавим в joints_by_id
+    if (bound.type == "Joint") {
+       // console.log(bound.id)
+       // console.log(plan.joints_by_id);
+        if (!plan.joints_by_id.has(bound.id)) {
+       //     console.log("insert");
+            plan.joints_by_id.set(bound.id, Array());
+        }
+       // console.log(plan.joints_by_id.get(bound.id));
+
+        plan.joints_by_id.get(bound.id).push(plan.bounds.length - 1);
+    }
 
     // если это выход — продублируем в exits
     if (bound.type == "Exit") plan.exits.push(bound);
