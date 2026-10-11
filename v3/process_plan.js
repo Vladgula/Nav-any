@@ -1,6 +1,29 @@
 // обрабатывает структуру данных "План здания" - добавляет ребра к каждому пункту
 function process_plan ()
 {
+    // каждая площадка - это вершина графа
+    for (let square_index = 0; square_index < plan.squares.length; square_index++) {
+        vertex = {
+            type: "square",  // тип вершины
+            id: plan.squares[square_index].id,  // id площадки
+            index: plan.vertices.length,  // индекс вершины
+        };
+        plan.vertices.push(vertex);
+        plan.squares[square_index].vertex_index = vertex.index;
+    }
+    // каждый стык - это вершина графа
+    //   (один и тот же стык в рамках разных площадок - это две разные вершины)
+
+    // ??? 
+    // как сейчас написан read_plan: bound_by_id будет соответствовать только
+    //   одному стыку? это неправильно, потому что у нас два стыка с одним id
+
+
+
+
+
+    /*
+    return;
     for (let path_index = 0; path_index < plan.paths.length; path_index++) {
         for (let i = 0; i < plan.paths[path_index].path_points.length; i++) {
             if (i == 0)
@@ -39,7 +62,10 @@ function process_plan ()
                 }
             }
         }
+    */
     }
 }
 
 process_plan();
+
+console.log("=== process_plan: plan ===", plan);   // отладка

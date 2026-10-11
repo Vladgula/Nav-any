@@ -38,7 +38,10 @@ let plan = {
 
     cards: new Map(),         // карточки (текст для ориентира)
     categories: [],           // категории ориентиров
-    category_by_id: new Map()
+    category_by_id: new Map(),
+
+    vertices: [],  // вершины графа (площадки, стыки, ориентиры)
+    edges: []  // двумерный массив - списки смежности графа
 };
 
 
