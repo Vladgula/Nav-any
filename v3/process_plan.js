@@ -58,7 +58,8 @@ function process_plan ()
     for (let bound_index = 0; bound_index < plan.bounds.length; bound_index++) { 
         // TODO: а если bound - это <Exit>?
         // TODO: сделать каждое ребро структурой? (чтобы отличать разновидности рёбер)
-        let square_index = plan.square_by_id[plan.bounds[bound_index].square_id];
+        //let square_index = plan.square_by_id[plan.bounds[bound_index].square_id];
+        let square_index = plan.bounds[bound_index].square_index;
         //console.log(square_index);
         // ОШИБКА! у square обычно нет id! надо как-то идентифицировать площадки!
 
