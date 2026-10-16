@@ -80,6 +80,7 @@ function read_square (xml_node, floor_num, block_id)
         block_id: block_id,
         sides: [],       // массив сторон (forward/left/right/backward)
         orients: [],     // ориентиры, лежащие прямо на площадке (вне Side)
+        bounds: [],     // стыки и выходы, лежащие прямо на площадке (вне Side)
         edges: []        // список смежности (заполнит process_plan)
     };
 
@@ -97,7 +98,8 @@ function read_square (xml_node, floor_num, block_id)
         }
         else if (child.tagName == "Joint" || child.tagName == "Exit") {
             // стык/выход прямо на площадке
-            read_bound(child, square, null);
+            let bound = read_bound(child, square, null);
+            square.bounds.push(bound);
         }
     }
 
@@ -122,7 +124,8 @@ function read_side (xml_node, square)
     let side = {
         dir: dir,        // forward / left / right / backward
         parts: [],       // части стороны
-        orients: []      // ориентиры, лежащие прямо на стороне
+        orients: [],     // ориентиры, лежащие прямо на стороне
+        bounds: []       // стыки и выходы, лежащие прямо на стороне
     };
 
     // если у стороны есть дети — читаем их
@@ -142,7 +145,7 @@ function read_side (xml_node, square)
                     side.orients.push(read_orient(child));
                 }
                 else if (child.tagName == "Joint" || child.tagName == "Exit") {
-                    read_bound(child, square, side);
+                    side.bounds.push(read_bound(child, square, side));
                 }
             }
         }
@@ -157,7 +160,8 @@ function read_part (xml_node, square)
 {
     let part = {
         type: ("type" in xml_node.attributes ? xml_node.attributes["type"].nodeValue : "free"),
-        orients: []       // ориентиры внутри этой части
+        orients: [],       // ориентиры внутри этой части
+        bounds: []
     };
 
     // внутри Part могут быть Orient/Room/Joint
@@ -166,7 +170,7 @@ function read_part (xml_node, square)
             part.orients.push(read_orient(child));
         }
         else if (child.tagName == "Joint" || child.tagName == "Exit") {
-            read_bound(child, square, null);
+            part.bounds.push(read_bound(child, square, null));
         }
     }
 
