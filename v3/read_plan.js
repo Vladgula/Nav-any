@@ -206,7 +206,7 @@ function read_bound (xml_node, square, side)
         type: xml_node.tagName,  // Joint или Exit
         text: ("text" in xml_node.attributes ? xml_node.attributes["text"].nodeValue : ""),
         photo: ("photo" in xml_node.attributes ? xml_node.attributes["photo"].nodeValue : ""),
-        square_id: square ? square.id : "",
+        square_id: square ? square.id : "",  // плохо! у наших площадок обычно нет id!
         side_dir: side ? side.dir : "",
         edges: []   // заполнит process_plan
     };

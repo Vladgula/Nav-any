@@ -14,6 +14,7 @@ function process_plan ()
     // каждый стык - это вершина графа
     //   (один и тот же стык в рамках разных площадок - это две разные вершины)
     for (let bound_index = 0; bound_index < plan.bounds.length; bound_index++) {
+        // TODO: а если bound - это <Exit>?
         vertex = {
             type: "joint",  // тип вершины
             id: plan.bounds[bound_index].id,  // id стыка
@@ -46,13 +47,26 @@ function process_plan ()
             joint_index2 = joints_list[1];
             vertex_index1 = plan.bounds[joint_index1].vertex_index;
             vertex_index2 = plan.bounds[joint_index2].vertex_index;
-            plan.edges[vertex_index1].push(vertex_index2);
+            // TODO: сделать каждое ребро структурой? (чтобы отличать разновидности рёбер)
+            plan.edges[vertex_index1].push(vertex_index2);  
             plan.edges[vertex_index2].push(vertex_index1);
+            // TODO: завернуть эти две строчки в отдельную функцию add_edge?
         }
     }
     // любая площадка соединяется (двусторонними) рёбрами со всеми стыками,
     //   находящимися на этой площадке
-    // TODO
+    for (let bound_index = 0; bound_index < plan.bounds.length; bound_index++) { 
+        // TODO: а если bound - это <Exit>?
+        // TODO: сделать каждое ребро структурой? (чтобы отличать разновидности рёбер)
+        let square_index = plan.square_by_id[plan.bounds[bound_index].square_id];
+        //console.log(square_index);
+        // ОШИБКА! у square обычно нет id! надо как-то идентифицировать площадки!
+
+        vertex_index1 = plan.squares[square_index].vertex_index;  // вершина - площадка
+        vertex_index2 = plan.bounds[bound_index].vertex_index;  // вершина - стык
+        plan.edges[vertex_index1].push(vertex_index2);  
+        plan.edges[vertex_index2].push(vertex_index1);
+    }
 
     // любая площадка соединяется (двусторонними) рёбрами со всеми ориентирами,
     //   находящимися на этой площадке
