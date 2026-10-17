@@ -15,7 +15,7 @@ else  // Internet Explorer
 
 /*
     Структура данных "План здания":
-    - Площадки, Коридоры, Лестницы [стороны площадок, части сторон площадок]
+    - Площадки, Коридоры, Лестницы [ стороны площадок, части сторон площадок ]
     - Ориентиры, Комнаты
     - Стыки, Выходы
 */
@@ -35,9 +35,12 @@ let plan = {
     // этажи
     floors: [],
 
-    // ассоциативные массивы: строковый id -> объект
+    // ассоциативный массив: строковый id -> объект
     object_by_id: new Map(),
+    // ассоциативный массив: строковый id -> массив стыков
+    joints_by_id: new Map(),
 
+    // дополнительная информация, добавляемая модулем process_plan.js
     vertices: [],         // вершины графа (площадки, стыки, ориентиры)
     edges: []             // двумерный массив - списки смежности графа
 };
@@ -46,16 +49,37 @@ let plan = {
 function new_square (square_id)
 {
     let square = {
+        obj_type: "square",
         id: square_id,
-        index: plan.squares.length,
+        name: "",
+        // sides: [],           // массив сторон (right/forward/left/backward)
+        /*
+        // (перечисление ориентиров на каждой стороне площадки ведётся против часовой стрелки)
+        orients_right: [],      // ориентиры на правой стороне площадки
+        orients_forward: [],    // ориентиры на передней стороне площадки
+        orients_left: [],       // ориентиры на левой стороне площадки
+        orients_backward: [],      // ориентиры на правой стороне площадки
+        */
+        orients: [[], [], [], []],  // ориентиры на каждой из 4 сторон площадки 
+        // index: plan.squares.length,
     };
     plan.squares.push(square);
+    if (square_id)  // если square_id не пуст
+        if (plan.object_by_id.has(square_id))
+            alert(`Дублирование id ${square_id}`);
+        plan.object_by_id.set(square_id, square);
     return square;
 }
 
 
+// Обработка XML-тега <Square>
+//     xml_node: узел тега <Square>
+//     building: корпус
+//     floor: этаж
 function read_square (xml_node, building, floor)
 {
+    let square_id = "id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : "";
+    let square = new_square(square_id);
 
 }
 
