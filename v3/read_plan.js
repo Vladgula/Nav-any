@@ -10,57 +10,57 @@ else  // Internet Explorer
 {
     xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
     xmlDoc.async = false;
-    xmlDoc.loadXML(txt);
+    xmlDoc.loadXML(planXML);
 }
 
 /*
     Структура данных "План здания":
-       points - массив пунктов (пункт: этаж, id, название, тип пункта, массив ребер)
-       paths - массив путей перемещения (путь: тип пути, направление перемещения, массив пунктов в пути)
-       point_by_id - ассоциативный массив (ключ - строковый id, значение - индекс пункта)
+    - Площадки, Коридоры, Лестницы [стороны площадок, части сторон площадок]
+    - Ориентиры, Комнаты
+    - Стыки, Выходы
 */
+
 let plan = {
-    squares: [],          // массив площадок (квадратов/коридоров/лестниц)
-    bounds: [],           // массив стыков (<Joint> и <Exit>)
-    orients: [],          // все ориентиры одним плоским списком
-    corridors: [],        // массив коридоров (они длиннее площадок)
-    stairs: [],           // массив лестниц
-    exits: [],            // массив выходов из здания
-    blocks: [],           // массив отсеков (этаж + корпус)
+    // разновидности площадок
+    squares: [],          // площадки (площадки, коридоры, лестницы)
+    corridors: [],        // коридоры
+    stairs: [],           // лестницы
+    // разновидности ориентиров
+    orients: [],          // ориентиры
+    // разновидности стыков
+    joints: [],           // стыки (<Joint>)
+    exits: [],            // выходы (<Exit>)
+    // корпуса
+    buildings: [],
+    // этажи
+    floors: [],
 
-    // ассоциативные массивы: строковый id -> индекс в массиве
-    square_by_id: new Map(),
-    bound_by_id: new Map(),
-    orient_by_id: new Map(),
-    corridor_by_id: new Map(),
-    stairs_by_id: new Map(),
-    block_by_id: new Map(),
-    // строковый id -> список индексов стыков в массиве bounds
-    joints_by_id: new Map(),
+    // ассоциативные массивы: строковый id -> объект
+    object_by_id: new Map(),
 
-    cards: new Map(),         // карточки (текст для ориентира)
-    categories: [],           // категории ориентиров
-    category_by_id: new Map(),
-
-    vertices: [],  // вершины графа (площадки, стыки, ориентиры)
-    edges: []  // двумерный массив - списки смежности графа
+    vertices: [],         // вершины графа (площадки, стыки, ориентиры)
+    edges: []             // двумерный массив - списки смежности графа
 };
 
 
-const motionDir = ["up", "right", "down", "left"]; //направления сторон
-const motionDirForStr = str => {
-    return motionDir.indexOf(str);
+function new_square (square_id)
+{
+    let square = {
+        id: square_id,
+        index: plan.squares.length,
+    };
+    plan.squares.push(square);
+    return square;
 }
 
-function get_stairs_point_id (point_id, floor) //генерация id для лестниц (пригодятся, если понадобится совместимость)
+
+function read_square (xml_node, building, floor)
 {
-    return point_id + "_stairs_" + String(floor);
+
 }
 
-function get_elevator_point_id (point_id, floor) //генерация id для лифтов
-{
-    return point_id + "_elevator_" + String(floor);
-}
+
+
 
 // Что ДЕЛАЕТ: Читает тег <Square> — площадку. Внутри перебирает <Side dir="..."> (стороны), а внутри каждой стороны <Part> или сразу <Orient>
 // Логика:
