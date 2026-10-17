@@ -95,7 +95,7 @@ function read_square (xml_node, floor_num, block_id)
         }
         else if (child.tagName == "Orient" || child.tagName == "Room") {
             // ориентир прямо на площадке (без Side)
-            let orient = read_orient(child);
+            let orient = read_orient(child, square);
             square.orients.push(orient);
         }
         else if (child.tagName == "Joint" || child.tagName == "Exit") {
@@ -144,7 +144,7 @@ function read_side (xml_node, square)
             // иначе — читаем всех детей как ориентиры
             for (let child of xml_node.childNodes) {
                 if (child.tagName == "Orient" || child.tagName == "Room") {
-                    side.orients.push(read_orient(child));
+                    side.orients.push(read_orient(child, square));
                 }
                 else if (child.tagName == "Joint" || child.tagName == "Exit") {
                     side.bounds.push(read_bound(child, square, side));
@@ -169,7 +169,7 @@ function read_part (xml_node, square)
     // внутри Part могут быть Orient/Room/Joint
     for (let child of xml_node.childNodes) {
         if (child.tagName == "Orient" || child.tagName == "Room") {
-            part.orients.push(read_orient(child));
+            part.orients.push(read_orient(child, square));
         }
         else if (child.tagName == "Joint" || child.tagName == "Exit") {
             part.bounds.push(read_bound(child, square, null));
@@ -181,7 +181,7 @@ function read_part (xml_node, square)
 
 // ЧТО ДЕЛАЕТ: читает ориентир <Orient> или <Room>. Возвращает объект и отправляет его в plan.orients
 
-function read_orient (xml_node)
+function read_orient (xml_node, square)
 {
     let orient = {
         id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
@@ -190,7 +190,8 @@ function read_orient (xml_node)
         text: ("text" in xml_node.attributes ? xml_node.attributes["text"].nodeValue : ""),
         no: ("no" in xml_node.attributes ? xml_node.attributes["no"].nodeValue : ""),
         key: ("key" in xml_node.attributes),
-        wall: ("wall" in xml_node.attributes ? xml_node.attributes["wall"].nodeValue : "")
+        wall: ("wall" in xml_node.attributes ? xml_node.attributes["wall"].nodeValue : ""),
+        square_index: square.index,
     };
 
     // добавляем в общий список и в индекс
@@ -250,7 +251,7 @@ function read_corridor (xml_node, floor_num, block_id)
     // внутри коридора — ориентиры с атрибутом wall (left/right)
     for (let child of xml_node.childNodes) {
         if (child.tagName == "Orient" || child.tagName == "Room") {
-            corridor.orients.push(read_orient(child));
+            corridor.orients.push(read_orient(child, null));  // TODO: исправить! соединить ребрами коридоры с ориентирами и стыками! передать в read_orient коридор!
         }
     }
 
