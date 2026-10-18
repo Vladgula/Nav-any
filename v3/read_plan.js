@@ -52,6 +52,8 @@ function new_square (square_id)
         obj_type: "square",
         id: square_id,
         name: "",
+        building: null,
+        floor: null,
         // sides: [],           // массив сторон (right/forward/left/backward)
         /*
         // (перечисление ориентиров на каждой стороне площадки ведётся против часовой стрелки)
@@ -60,7 +62,13 @@ function new_square (square_id)
         orients_left: [],       // ориентиры на левой стороне площадки
         orients_backward: [],      // ориентиры на правой стороне площадки
         */
-        orients: [[], [], [], []],  // ориентиры на каждой из 4 сторон площадки 
+        //orients: [[], [], [], []],  // ориентиры на каждой из 4 сторон площадки 
+        // -- заменить на ассоциативный массив с 4 ключами?
+        
+        // ориентиры, стыки, выходы, находящиеся на сторонах площадки
+        //   (ориентиры на каждой стороне перечисляются в порядке обхода против часовой стрелки)
+        objects: new Map([["right", []], ["forward", []], ["left", []], ["backward", []]]),
+        vertex_index: null,     // индекс в массиве вершин графа (см. process_plan.js)
         // index: plan.squares.length,
     };
     plan.squares.push(square);
@@ -104,7 +112,7 @@ function read_square (xml_node, floor_num, block_id)
         block_id: block_id,
         sides: [],       // массив сторон (forward/left/right/backward)
         orients: [],     // ориентиры, лежащие прямо на площадке (вне Side)
-        bounds: [],     // стыки и выходы, лежащие прямо на площадке (вне Side)
+        bounds: [],      // стыки и выходы, лежащие прямо на площадке (вне Side)
         edges: []        // список смежности (заполнит process_plan)
     };
     // заполняем индекс площадки
