@@ -89,6 +89,81 @@ function new_square (square_id, building, floor)
 }
 
 
+// Обработка XML-тега <Side>
+//     xml_node: узел тега <Side>
+//     square: площадка
+// Добавляет к площадке ориентиры, расположенные на данной стороне
+function read_side (xml_node, square)
+{
+    // проверяем, есть ли атрибут dir — без него сторона бессмысленна
+    if (!("dir" in xml_node.attributes)) {
+        console.warn("Ошибка: у <Side> нет атрибута dir");
+        return;
+    }
+    let dir = xml_node.attributes["dir"].nodeValue;
+
+    // если у тега <Side> есть потомки, обработать их
+    if (xml_node.children.length > 0) {
+        // если первый потомок - тег <Part>, обработать все части стороны площадки
+        if (xml_node.children[0].tagName == "Part") {
+            for (let child of xml_node.childNodes) {
+                if (child.tagName == "Part") {
+                    side.parts.push(read_part(child, square));
+                }
+            }
+        }
+        // если первый потомок - не тег <Part>, то сторона площадки не разделена на части;
+        //   прочитать ориентиры и стыки, вложенные в тег <Side>
+        else {
+            for (let child of xml_node.childNodes) {
+                if (child.tagName == "Orient" || child.tagName == "Room") {
+                    side.orients.push(read_orient(child, square));
+                }
+                else if (child.tagName == "Joint" || child.tagName == "Exit") {
+                    side.bounds.push(read_bound(child, square, side));
+                }
+            }
+        }
+    }
+
+
+
+
+
+    // объект стороны
+    let side = {
+        dir: dir,        // forward / left / right / backward
+        parts: [],       // части стороны
+        orients: [],     // ориентиры, лежащие прямо на стороне
+        bounds: []       // стыки и выходы, лежащие прямо на стороне
+    };
+
+    // если у стороны есть дети — читаем их
+    if (xml_node.children.length > 0) {
+        // если первый ребёнок — Part, читаем все Part
+        if (xml_node.children[0].tagName == "Part") {
+            for (let child of xml_node.childNodes) {
+                if (child.tagName == "Part") {
+                    side.parts.push(read_part(child, square));
+                }
+            }
+        }
+        else {
+            // иначе — читаем всех детей как ориентиры
+            for (let child of xml_node.childNodes) {
+                if (child.tagName == "Orient" || child.tagName == "Room") {
+                    side.orients.push(read_orient(child, square));
+                }
+                else if (child.tagName == "Joint" || child.tagName == "Exit") {
+                    side.bounds.push(read_bound(child, square, side));
+                }
+            }
+        }
+    }
+
+    return side;
+}
+
 // Обработка XML-тега <Square>
 //     xml_node: узел тега <Square>
 //     building: корпус
@@ -102,6 +177,10 @@ function read_square (xml_node, building, floor)
     for (let child of xml_node.childNodes) {
         if (child.tagName == "Side") {
             // прочитать тег <Side>
+            read_side(child, square);
+
+
+
 
 
             // ???
