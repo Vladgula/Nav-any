@@ -46,14 +46,26 @@ let plan = {
 };
 
 
-function new_square (square_id)
+// Добавляет id объекта в ассоциативный массив object_by_id
+function register_object_id (object_id, object)
+{
+    if (object_id) {  // если object_id не пуст
+        if (plan.object_by_id.has(object_id))
+            alert(`Дублирование id ${object_id}`);
+        plan.object_by_id.set(object_id, object);
+    }
+}
+
+
+// Создает новую площадку (добавляет её в массив площадок, регистрирует id площадки)
+function new_square (square_id, building, floor)
 {
     let square = {
         obj_type: "square",
         id: square_id,
         name: "",
-        building: null,
-        floor: null,
+        building: building,
+        floor: floor,
         // sides: [],           // массив сторон (right/forward/left/backward)
         /*
         // (перечисление ориентиров на каждой стороне площадки ведётся против часовой стрелки)
@@ -72,10 +84,7 @@ function new_square (square_id)
         // index: plan.squares.length,
     };
     plan.squares.push(square);
-    if (square_id)  // если square_id не пуст
-        if (plan.object_by_id.has(square_id))
-            alert(`Дублирование id ${square_id}`);
-        plan.object_by_id.set(square_id, square);
+    register_object_id(square_id, square);
     return square;
 }
 
@@ -87,8 +96,39 @@ function new_square (square_id)
 function read_square (xml_node, building, floor)
 {
     let square_id = "id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : "";
-    let square = new_square(square_id);
+    let square = new_square(square_id, building, floor);
 
+    // перечислить все вложенные теги
+    for (let child of xml_node.childNodes) {
+        if (child.tagName == "Side") {
+            // прочитать тег <Side>
+
+
+            // ???
+            // переписать!
+
+
+
+
+
+
+
+            let side = read_side(child, square);
+            if (side) square.sides.push(side);
+        }
+        else if (child.tagName == "Orient" || child.tagName == "Room") {
+            // ориентир прямо на площадке (без Side)
+            let orient = read_orient(child, square);
+            square.orients.push(orient);
+        }
+        else if (child.tagName == "Joint" || child.tagName == "Exit") {
+            // стык/выход прямо на площадке
+            let bound = read_bound(child, square, null);
+            square.bounds.push(bound);
+        }
+    }
+
+    return square;
 }
 
 
