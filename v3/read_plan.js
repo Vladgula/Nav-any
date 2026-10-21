@@ -41,8 +41,8 @@ let plan = {
     joints_by_id: new Map(),
 
     // дополнительная информация, добавляемая модулем process_plan.js
-    vertices: [],         // вершины графа (площадки, стыки, ориентиры)
-    edges: []             // двумерный массив - списки смежности графа
+    //vertices: [],         // вершины графа (площадки, стыки, ориентиры)
+    //edges: []             // двумерный массив - списки смежности графа
 };
 
 
@@ -79,6 +79,26 @@ function new_square (square_id, building, floor)
 }
 
 
+// Обработка XML-тега: <Orient>, <Room>, <Joint>, <Exit>
+//     xml_node: узел соответствующего тега
+// Возвращает объект [ orient | room | joint | exit ]
+function read_object_on_side (xml_node)
+{
+    if (xml_node.tagName == "Orient" || xml_node.tagName == "Room"
+        || xml_node.tagName == "Joint" || xml_node.tagName == "Exit")
+    {
+        // TODO...
+
+        // заполнить массив objects_by_id или joints_by_id
+
+    }
+    else {
+        console.warn("Ошибка: на стороне площадки неизвестный тег " + xml_child.tagName);
+        return null;
+    }
+}
+
+
 // Обработка XML-тега <Part>
 //     xml_node: узел тега <Part>
 //     square: площадка
@@ -88,9 +108,46 @@ function new_square (square_id, building, floor)
 function read_part (xml_node, square, dir, type)
 {
     // в тег <Part> вложены теги <Orient>, <Room>, <Joint>, <Exit>
-    
+    for (let xml_child of xml_node.childNodes) {
+        object = read_object_on_side(xml_child);
 
 
+
+
+
+        if (xml_child.tagName == "Orient" || xml_child.tagName == "Room"
+            || xml_child.tagName == "Joint" || xml_child.tagName == "Exit")
+        {
+            object = read_object_on_side(xml_child);
+            // далее: включить object в структуру данных
+        }
+        else {
+            console.warn("Ошибка: на стороне площадки неизвестный тег " + xml_child.tagName);
+        }
+
+
+
+
+            object = add_orient("orient", square, dir, type);
+        }
+        else if (xml_child.tagName == "Room") {
+            object = add_orient("room", square, dir, type)
+        }
+            square.objects[dir].push({
+                
+            });
+
+
+
+
+
+
+            side.orients.push(read_orient(xml_child, square));
+        }
+        else if (xml_child.tagName == "Joint" || xml_child.tagName == "Exit") {
+            side.bounds.push(read_bound(xml_child, square, side));
+        }
+    }
 
 
 
