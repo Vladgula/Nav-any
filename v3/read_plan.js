@@ -13,6 +13,7 @@ else  // Internet Explorer
     xmlDoc.loadXML(planXML);
 }
 
+
 /*
     Структура данных "План здания":
     - Площадки, Коридоры, Лестницы [ стороны площадок, части сторон площадок ]
@@ -87,10 +88,33 @@ function read_object_on_side (xml_node)
     if (xml_node.tagName == "Orient" || xml_node.tagName == "Room"
         || xml_node.tagName == "Joint" || xml_node.tagName == "Exit")
     {
-        // TODO...
-
-        // заполнить массив objects_by_id или joints_by_id
-
+        if (xml_node.tagName == "Orient") {
+            let orient = {
+                id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
+                obj_type: "orient",
+                name: ("name" in xml_node.attributes ? xml_node.attributes["name"].nodeValue : ""),
+                text: ("text" in xml_node.attributes ? xml_node.attributes["text"].nodeValue : ""),
+                no: ("no" in xml_node.attributes ? xml_node.attributes["no"].nodeValue : ""),
+                key: ("key" in xml_node.attributes),
+                wall: ("wall" in xml_node.attributes ? xml_node.attributes["wall"].nodeValue : ""),
+                edges: [],  // список смежных объектов в графе (см. process_plan.js)
+            };
+            if (!(orient.wall == "left" || orient.wall == "right")) {
+                console.warn("Некорректное значение атрибута wall тега <Orient>");
+            }
+            plan.orients.push(orient);
+            register_object_id(orient_id, orient);
+            return orient;
+        }
+        else if (xml_node.tagName == "Room") {
+            // TODO
+        }
+        else if (xml_node.tagName == "Joint") {
+            // TODO
+        }
+        else if (xml_node.tagName == "Exit") {
+            // TODO
+        }
     }
     else {
         console.warn("Ошибка: на стороне площадки неизвестный тег " + xml_child.tagName);
@@ -99,7 +123,7 @@ function read_object_on_side (xml_node)
 }
 
 
-// Обработка XML-тега <Part>
+// Обработка XML-тега <Part> либо тега <Side>, внутри которого нет <Part>
 //     xml_node: узел тега <Part>
 //     square: площадка
 //     dir: направление стороны площадки
@@ -110,65 +134,9 @@ function read_part (xml_node, square, dir, type)
     // в тег <Part> вложены теги <Orient>, <Room>, <Joint>, <Exit>
     for (let xml_child of xml_node.childNodes) {
         object = read_object_on_side(xml_child);
-
-
-
-
-
-        if (xml_child.tagName == "Orient" || xml_child.tagName == "Room"
-            || xml_child.tagName == "Joint" || xml_child.tagName == "Exit")
-        {
-            object = read_object_on_side(xml_child);
-            // далее: включить object в структуру данных
-        }
-        else {
-            console.warn("Ошибка: на стороне площадки неизвестный тег " + xml_child.tagName);
-        }
-
-
-
-
-            object = add_orient("orient", square, dir, type);
-        }
-        else if (xml_child.tagName == "Room") {
-            object = add_orient("room", square, dir, type)
-        }
-            square.objects[dir].push({
-                
-            });
-
-
-
-
-
-
-            side.orients.push(read_orient(xml_child, square));
-        }
-        else if (xml_child.tagName == "Joint" || xml_child.tagName == "Exit") {
-            side.bounds.push(read_bound(xml_child, square, side));
-        }
+        object.part_type = type;  // к объекту на стороне площадки добавляется атрибут part_type
+        square.objects[dir].push(object);
     }
-
-
-
-
-    let part = {
-        type: ("type" in xml_node.attributes ? xml_node.attributes["type"].nodeValue : "free"),
-        orients: [],       // ориентиры внутри этой части
-        bounds: []
-    };
-
-    // внутри Part могут быть Orient/Room/Joint
-    for (let child of xml_node.childNodes) {
-        if (child.tagName == "Orient" || child.tagName == "Room") {
-            part.orients.push(read_orient(child, square));
-        }
-        else if (child.tagName == "Joint" || child.tagName == "Exit") {
-            part.bounds.push(read_bound(child, square, null));
-        }
-    }
-
-    return part;
 }
 
 
@@ -183,7 +151,7 @@ function read_side (xml_node, square)
         console.warn("Ошибка: у <Side> нет атрибута dir");
         return;
     }
-    let dir = xml_node.attributes["dir"].nodeValue;
+    let dir = xml_node.attributes["dir"].nodeValue;  // направление стороны площадки
 
     // если у тега <Side> есть вложенные теги, обработать их
     if (xml_node.children.length > 0) {
@@ -194,25 +162,17 @@ function read_side (xml_node, square)
                     part_type = "type" in xml_child.attributes ? xml_child.attributes["type"].nodeValue : null;
                     read_part(xml_child, square, dir, part_type);
                 }
+                else {
+                    console.warn("Посторонний тег внутри <Side>, где есть <Part>");
+                }
             }
         }
         // если первый вложенный тег - не <Part>, то сторона площадки не разделена на части;
         //   прочитать ориентиры и стыки, вложенные в тег <Side>
         else {
+            // тип стороны площадки по умолчанию - "free"
             side_type = "type" in xml_node.attributes ? xml_node.attributes["type"].nodeValue : "free";
             read_part(xml_node, square, dir, side_type);
-
-
-
-
-            for (let xml_child of xml_node.childNodes) {
-                if (xml_child.tagName == "Orient" || xml_child.tagName == "Room") {
-                    side.orients.push(read_orient(xml_child, square));
-                }
-                else if (xml_child.tagName == "Joint" || xml_child.tagName == "Exit") {
-                    side.bounds.push(read_bound(xml_child, square, side));
-                }
-            }
         }
     }
 }
