@@ -94,7 +94,7 @@ function read_object_on_side (xml_node)
                 obj_type: "orient",
                 name: ("name" in xml_node.attributes ? xml_node.attributes["name"].nodeValue : ""),
                 text: ("text" in xml_node.attributes ? xml_node.attributes["text"].nodeValue : ""),
-                no: ("no" in xml_node.attributes ? xml_node.attributes["no"].nodeValue : ""),
+                //no: ("no" in xml_node.attributes ? xml_node.attributes["no"].nodeValue : ""),
                 key: ("key" in xml_node.attributes),
                 wall: ("wall" in xml_node.attributes ? xml_node.attributes["wall"].nodeValue : ""),
                 edges: [],  // список смежных объектов в графе (см. process_plan.js)
@@ -103,11 +103,27 @@ function read_object_on_side (xml_node)
                 console.warn("Некорректное значение атрибута wall тега <Orient>");
             }
             plan.orients.push(orient);
-            register_object_id(orient_id, orient);
+            register_object_id(orient.id, orient);
             return orient;
         }
         else if (xml_node.tagName == "Room") {
-            // TODO
+            let room = {
+                // (?) если id не указан, задействовать номер комнаты?
+                id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
+                obj_type: "room",
+                name: ("name" in xml_node.attributes ? xml_node.attributes["name"].nodeValue : ""),
+                text: ("text" in xml_node.attributes ? xml_node.attributes["text"].nodeValue : ""),
+                no: ("no" in xml_node.attributes ? xml_node.attributes["no"].nodeValue : ""),
+                key: ("key" in xml_node.attributes),
+                wall: ("wall" in xml_node.attributes ? xml_node.attributes["wall"].nodeValue : ""),
+                edges: [],  // список смежных объектов в графе (см. process_plan.js)
+            };
+            if (!(room.wall == "left" || room.wall == "right")) {
+                console.warn("Некорректное значение атрибута wall тега <Room>");
+            }
+            plan.orients.push(room);
+            register_object_id(room.id, room);
+            return room;
         }
         else if (xml_node.tagName == "Joint") {
             // TODO
@@ -177,6 +193,7 @@ function read_side (xml_node, square)
     }
 }
 
+
 // Обработка XML-тега <Square>
 //     xml_node: узел тега <Square>
 //     building: корпус
@@ -191,157 +208,19 @@ function read_square (xml_node, building, floor)
         if (child.tagName == "Side") {
             // прочитать тег <Side>
             read_side(child, square);
-
-
-
-
-
-            // ???
-            // переписать!
-
-
-
-
-
-
-
-            let side = read_side(child, square);
-            if (side) square.sides.push(side);
-        }
-        else if (child.tagName == "Orient" || child.tagName == "Room") {
-            // ориентир прямо на площадке (без Side)
-            let orient = read_orient(child, square);
-            square.orients.push(orient);
-        }
-        else if (child.tagName == "Joint" || child.tagName == "Exit") {
-            // стык/выход прямо на площадке
-            let bound = read_bound(child, square, null);
-            square.bounds.push(bound);
-        }
-    }
-
-    return square;
-}
-
-
-
-
-// Что ДЕЛАЕТ: Читает тег <Square> — площадку. Внутри перебирает <Side dir="..."> (стороны), а внутри каждой стороны <Part> или сразу <Orient>
-// Логика:
-//Ищем <Side> внутри <Square>
-//Если у <Side> нет атрибута dir — пишем ошибку (в консоль или alert)
-//Если dir есть — сохраняем в side.dir
-//Если первый ребёнок <Side> — <Part>, читаем все Part через read_part
-//Если первый ребёнок — не <Part>, читаем всех детей как ориентиры через read_orient
-
-function read_square (xml_node, floor_num, block_id)
-{
-    // создаём объект площадки
-    let square = {
-        id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
-        name: ("name" in xml_node.attributes ? xml_node.attributes["name"].nodeValue : ""),
-        floor: floor_num,
-        block_id: block_id,
-        sides: [],       // массив сторон (forward/left/right/backward)
-        orients: [],     // ориентиры, лежащие прямо на площадке (вне Side)
-        bounds: [],      // стыки и выходы, лежащие прямо на площадке (вне Side)
-        edges: []        // список смежности (заполнит process_plan)
-    };
-    // заполняем индекс площадки
-    square.index = plan.squares.length;
-
-    // перебираем всех детей <Square>
-    for (let child of xml_node.childNodes) {
-        if (child.tagName == "Side") {
-            // читаем сторону
-            let side = read_side(child, square);
-            if (side) square.sides.push(side);
-        }
-        else if (child.tagName == "Orient" || child.tagName == "Room") {
-            // ориентир прямо на площадке (без Side)
-            let orient = read_orient(child, square);
-            square.orients.push(orient);
-        }
-        else if (child.tagName == "Joint" || child.tagName == "Exit") {
-            // стык/выход прямо на площадке
-            let bound = read_bound(child, square, null);
-            square.bounds.push(bound);
-        }
-    }
-
-    // добавляем площадку в plan и в индекс по id
-    plan.squares.push(square);
-    if (square.id) plan.square_by_id.set(square.id, plan.squares.length - 1);
-    return square;
-}
-
-// ЧТО ДЕЛАЕТ: читает одну сторону <Side> площадки. Проверяет наличие dir. Внутри читает <Part> или <Orient>
-
-function read_side (xml_node, square)
-{
-    // проверяем, есть ли атрибут dir — без него сторона бессмысленна
-    if (!("dir" in xml_node.attributes)) {
-        console.warn("Ошибка: у <Side> нет атрибута dir");
-        return null;
-    }
-    let dir = xml_node.attributes["dir"].nodeValue;
-
-    // объект стороны
-    let side = {
-        dir: dir,        // forward / left / right / backward
-        parts: [],       // части стороны
-        orients: [],     // ориентиры, лежащие прямо на стороне
-        bounds: []       // стыки и выходы, лежащие прямо на стороне
-    };
-
-    // если у стороны есть дети — читаем их
-    if (xml_node.children.length > 0) {
-        // если первый ребёнок — Part, читаем все Part
-        if (xml_node.children[0].tagName == "Part") {
-            for (let child of xml_node.childNodes) {
-                if (child.tagName == "Part") {
-                    side.parts.push(read_part(child, square));
-                }
-            }
         }
         else {
-            // иначе — читаем всех детей как ориентиры
-            for (let child of xml_node.childNodes) {
-                if (child.tagName == "Orient" || child.tagName == "Room") {
-                    side.orients.push(read_orient(child, square));
-                }
-                else if (child.tagName == "Joint" || child.tagName == "Exit") {
-                    side.bounds.push(read_bound(child, square, side));
-                }
-            }
+            // (?) ориентир может находиться прямо на площадке?
+            console.warn("Посторонний тег внутри <Square>");
         }
     }
 
-    return side;
+    return square;
 }
 
-// ЧТО ДЕЛАЕТ: читает <Part type="wall|window|free">. Внутри — ориентиры
 
-function read_part (xml_node, square)
-{
-    let part = {
-        type: ("type" in xml_node.attributes ? xml_node.attributes["type"].nodeValue : "free"),
-        orients: [],       // ориентиры внутри этой части
-        bounds: []
-    };
 
-    // внутри Part могут быть Orient/Room/Joint
-    for (let child of xml_node.childNodes) {
-        if (child.tagName == "Orient" || child.tagName == "Room") {
-            part.orients.push(read_orient(child, square));
-        }
-        else if (child.tagName == "Joint" || child.tagName == "Exit") {
-            part.bounds.push(read_bound(child, square, null));
-        }
-    }
 
-    return part;
-}
 
 // ЧТО ДЕЛАЕТ: читает ориентир <Orient> или <Room>. Возвращает объект и отправляет его в plan.orients
 
