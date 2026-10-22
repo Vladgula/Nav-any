@@ -109,7 +109,7 @@ function read_object_on_side (xml_node)
                 wall: ("wall" in xml_node.attributes ? xml_node.attributes["wall"].nodeValue : ""),
                 edges: [],  // список смежных объектов в графе (см. process_plan.js)
             };
-            if (!(orient.wall == "left" || orient.wall == "right")) {
+            if (orient.wall && !(orient.wall == "left" || orient.wall == "right")) {
                 console.warn("Некорректное значение атрибута wall тега <Orient>");
             }
             plan.orients.push(orient);
@@ -128,7 +128,7 @@ function read_object_on_side (xml_node)
                 wall: ("wall" in xml_node.attributes ? xml_node.attributes["wall"].nodeValue : ""),
                 edges: [],  // список смежных объектов в графе (см. process_plan.js)
             };
-            if (!(room.wall == "left" || room.wall == "right")) {
+            if (room.wall && !(room.wall == "left" || room.wall == "right")) {
                 console.warn("Некорректное значение атрибута wall тега <Room>");
             }
             plan.orients.push(room);
@@ -151,8 +151,8 @@ function read_object_on_side (xml_node)
             return joint;
         }
     }
-    else {
-        console.warn("Ошибка: на стороне площадки неизвестный тег " + xml_child.tagName);
+    else if (xml_node.nodeType == 1) {
+        console.warn("Ошибка: на стороне площадки неизвестный тег " + xml_node.tagName);
         return null;
     }
 }
@@ -168,10 +168,11 @@ function read_part (xml_node, square, dir, type)
 {
     // в тег <Part> вложены теги <Orient>, <Room>, <Joint>, <Exit>
     for (let xml_child of xml_node.childNodes) {
-        object = read_object_on_side(xml_child);
+        if (xml_child.nodeType != 1) continue;  // если это не тег => продолжить
+        let object = read_object_on_side(xml_child);
         object.parent_square = square;  // ссылка на площадку, на стороне которой находится объект
         object.part_type = type;  // к объекту на стороне площадки добавляется атрибут part_type
-        square.objects[dir].push(object);
+        square.objects.get(dir).push(object);
     }
 }
 
@@ -198,7 +199,7 @@ function read_side (xml_node, square)
                     part_type = "type" in xml_child.attributes ? xml_child.attributes["type"].nodeValue : null;
                     read_part(xml_child, square, dir, part_type);
                 }
-                else {
+                else if (xml_child.nodeType == 1) {
                     console.warn("Посторонний тег внутри <Side>, где есть <Part>");
                 }
             }
@@ -224,12 +225,12 @@ function read_square (xml_node, building, floor)
     let square = new_square(square_id, building, floor);
 
     // перечислить все вложенные теги
-    for (let child of xml_node.childNodes) {
-        if (child.tagName == "Side") {
+    for (let xml_child of xml_node.childNodes) {
+        if (xml_child.tagName == "Side") {
             // прочитать тег <Side>
-            read_side(child, square);
+            read_side(xml_child, square);
         }
-        else {
+        else if (xml_child.nodeType == 1) {
             // (?) ориентир может находиться прямо на площадке?
             console.warn("Посторонний тег внутри <Square>");
         }
@@ -284,7 +285,8 @@ function read_corridor (xml_node, building, floor)
     // в тег <Corridor> вложены теги <Orient>, <Room>
     // перечислить все вложенные теги
     for (let xml_child of xml_node.childNodes) {
-        object = read_object_on_side(xml_child);
+        if (xml_child.nodeType != 1) continue;  // если это не тег => продолжить
+        let object = read_object_on_side(xml_child);
         object.parent_square = corridor;  // ссылка на площадку, на стороне которой находится объект
         object.part_type = "wall";  // см. TODO (выше)
         corridor.objects.push(object);
@@ -299,7 +301,7 @@ function new_stairs (stairs_id, start_id, finish_id)
 {
     let stairs = {
         obj_type: "stairs",
-        id: corridor_id,
+        id: stairs_id,
         name: "",
         // id стыка, с которого начинается лестница
         start_id: start_id,
@@ -332,7 +334,8 @@ function read_stairs (xml_node)
     // в тег <Stairs> могут быть вложены теги <Orient>
     // перечислить все вложенные теги
     for (let xml_child of xml_node.childNodes) {
-        object = read_object_on_side(xml_child);
+        if (xml_child.nodeType != 1) continue;  // если это не тег => продолжить
+        let object = read_object_on_side(xml_child);
         object.parent_square = stairs;  // ссылка на площадку, на стороне которой находится объект
         object.part_type = "wall";  // см. TODO (выше)
         stairs.objects.push(object);
@@ -368,7 +371,7 @@ function read_block (xml_node, building, floor)
                 if (xml_child.tagName == "Block") {
                     read_block(xml_child, new_building, new_floor);
                 }
-                else {
+                else if (xml_child.nodeType == 1) {
                     console.warn("Посторонний тег внутри <Block>, где есть вложенный тег <Block>");
                 }
             }
@@ -385,7 +388,7 @@ function read_block (xml_node, building, floor)
                 else if (xml_child.tagName == "Stairs") {
                     read_stairs(xml_child);
                 }
-                else {
+                else if (xml_child.nodeType == 1) {
                     console.warn(`Посторонний тег внутри <Block>, где есть вложенные теги типа "площадка"`);
                 }
             }            
@@ -430,7 +433,7 @@ function read_plan ()
         else if (plan_child.tagName == "Exit") {
             read_exit(plan_child);
         }
-        else {
+        else if (plan_child.nodeType == 1) {
             console.warn("Ошибка: внутри <Plan> неизвестный тег " + plan_child.tagName);
         }
     }
