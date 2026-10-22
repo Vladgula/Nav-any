@@ -40,6 +40,7 @@ let plan = {
     object_by_id: new Map(),
     // ассоциативный массив: строковый id -> массив стыков
     joints_by_id: new Map(),
+    // TODO: добавить отдельный ассоциативный массив exists_by_id для хранения выходов
 
     // дополнительная информация, добавляемая модулем process_plan.js
     //vertices: [],         // вершины графа (площадки, стыки, ориентиры)
@@ -76,7 +77,7 @@ function new_square (square_id, building, floor)
         name: "",
         building: building,
         floor: floor,
-        // ориентиры, стыки, выходы, находящиеся на сторонах площадки
+        // ориентиры и стыки, находящиеся на сторонах площадки
         //   (ориентиры на каждой стороне перечисляются в порядке обхода против часовой стрелки)
         objects: new Map([["right", []], ["forward", []], ["left", []], ["backward", []]]),
         //vertex_index: null,     // индекс в массиве вершин графа (см. process_plan.js)
@@ -89,7 +90,7 @@ function new_square (square_id, building, floor)
 }
 
 
-// Обработка XML-тега: <Orient>, <Room>, <Joint>, <Exit>
+// Обработка XML-тега: <Orient>, <Room>, <Joint>
 //     xml_node: узел соответствующего тега
 // Возвращает объект [ orient | room | joint ]
 function read_object_on_side (xml_node)
@@ -238,36 +239,62 @@ function read_square (xml_node, building, floor)
 }
 
 
-
-
-
-// ЧТО ДЕЛАЕТ: читает <Corridor> — коридор. У него есть start, finish, finish_text, finish_photo, floor, building
-
-function read_corridor (xml_node, floor_num, block_id)
+// Создает новый коридор (добавляет его в массив коридоров, регистрирует id коридора)
+function new_corridor (corridor_id, building, floor)
 {
     let corridor = {
-        id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
-        start: ("start" in xml_node.attributes ? xml_node.attributes["start"].nodeValue : ""),
-        finish: ("finish" in xml_node.attributes ? xml_node.attributes["finish"].nodeValue : ""),
+        obj_type: "corridor",
+        id: corridor_id,
+        name: "",
+        building: building,
+        floor: floor,
+        // id стыка, с которого начинается коридор
+        start_id: ("start" in xml_node.attributes ? xml_node.attributes["start"].nodeValue : ""),
+        // id стыка, на котором заканчивается коридор
+        finish_id: ("finish" in xml_node.attributes ? xml_node.attributes["finish"].nodeValue : ""),
         finish_text: ("finish_text" in xml_node.attributes ? xml_node.attributes["finish_text"].nodeValue : ""),
         finish_photo: ("finish_photo" in xml_node.attributes ? xml_node.attributes["finish_photo"].nodeValue : ""),
-        floor: floor_num,
-        block_id: block_id,
-        orients: [],
-        edges: []
+        // ориентиры и стыки, находящиеся вдоль стенок коридора
+        //   (ориентиры перечисляются в порядке движения от начала до конца коридора)
+        objects: [],
+        edges: [],  // список смежных объектов в графе (см. process_plan.js)
     };
-
-    // внутри коридора — ориентиры с атрибутом wall (left/right)
-    for (let child of xml_node.childNodes) {
-        if (child.tagName == "Orient" || child.tagName == "Room") {
-            corridor.orients.push(read_orient(child, null));  // TODO: исправить! соединить ребрами коридоры с ориентирами и стыками! передать в read_orient коридор!
-        }
-    }
-
     plan.corridors.push(corridor);
-    if (corridor.id) plan.corridor_by_id.set(corridor.id, plan.corridors.length - 1);
+    register_object_id(corridor_id, corridor);
     return corridor;
 }
+
+
+// Обработка XML-тега <Corridor>
+//     xml_node: узел тега <Corridor>
+//     building: корпус
+//     floor: этаж
+function read_corridor (xml_node, building, floor)
+{
+    let corridor_id = "id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : "";
+    let corridor = new_corridor(corridor_id, building, floor);
+
+    // (TODO?) возможность добавить в тег <Corridor> вложенный тег <Part>,
+    //   чтобы указать тип границы (не стенка, а свободное пространство или окно);
+    // тогда можно будет на стенках коридора указывать стыки
+    
+    // Дальше - по аналогии с read_part
+    // в тег <Corridor> вложены теги <Orient>, <Room>
+    // перечислить все вложенные теги
+    for (let xml_child of xml_node.childNodes) {
+        object = read_object_on_side(xml_child);
+        object.parent_square = corridor;  // ссылка на площадку, на стороне которой находится объект
+        object.part_type = "wall";  // см. TODO (выше)
+        corridor.objects.push(object);
+    }
+
+    return corridor;
+}
+
+
+
+
+
 
 // ЧТО ДЕЛАЕТ: читает <Stairs> — лестницу. У неё floor_down, floor_up, text_up, text_down
 
