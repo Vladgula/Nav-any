@@ -345,14 +345,42 @@ function read_stairs (xml_node)
 // ЧТО ДЕЛАЕТ: корневой цикл. Вместо <Floor> внутри <Plan> теперь <Block> (отсек = этаж + корпус), 
 // внутри — <Square>, <Corridor>, <Stairs>. <Exit> и <Card> и <Category> — на уровне <Plan>.
 
+
+// Обработка XML-тега <Block>
+//     xml_node: узел тега <Block>
+//     building: корпус
+//     floor: этаж
+function read_block (xml_node, building, floor)
+{
+    // TODO: если вложенный тег - <Block>, читаем все вложенные блоки;
+    //   если вложенный тег - <Square>/<Corridor>/<Stairs>, читаем все вложенные площадки/коридоры/лестницы
+
+
+}
+
+
+// Обработка XML-файла
 function read_plan ()
 {
     let xml_plan = xmlDoc.getElementsByTagName("Plan")[0];
     if (!xml_plan) { alert("Нет корневого тега <Plan>"); return; }
 
-    // <Plan> содержит <Building> и (опционально) <Card>/<Category>/<Exit>
+    // <Plan> содержит <Block>, <Exit>
+    // TODO: добавить теги <Building>, <Floor> - для регистрации корпусов и номеров этажей
     for (let plan_child of xml_plan.childNodes) {
+        if (plan_child.tagName == "Block") {
+            read_block(plan_child);
+        }
+        else if (plan_child.tagName == "Exit") {
+            read_exit(plan_child);
+            // TODO: написать read_exit
+        }
+        else {
+            console.warn("Ошибка: внутри <Plan> неизвестный тег " + plan_child.tagName);
+        }
+    }
 
+/*
         if (plan_child.tagName == "Building") {
             // внутри <Building> — <Block> (отсеки/этажи)
             for (let building_child of plan_child.childNodes) {
@@ -396,6 +424,7 @@ function read_plan ()
             read_category(plan_child);
         }
     }
+*/
 }
 
 read_plan();
