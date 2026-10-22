@@ -53,7 +53,16 @@ function register_object_id (object_id, object)
     if (object_id) {  // если object_id не пуст
         if (plan.object_by_id.has(object_id))
             alert(`Дублирование id ${object_id}`);
-        plan.object_by_id.set(object_id, object);
+        if (object.obj_type != "joint") {  // если это не стык
+            plan.object_by_id.set(object_id, object);
+        }
+        else {  // object.obj_type == "joint"
+            if (!plan.joints_by_id.has(object_id)) {
+                // такого id стыка в базе нет => присвоить пустой массив списку стыков с этим id
+                plan.joints_by_id.set(object_id, Array());
+            }
+            plan.joints_by_id.get(object_id).push(object);
+        }
     }
 }
 
@@ -82,11 +91,11 @@ function new_square (square_id, building, floor)
 
 // Обработка XML-тега: <Orient>, <Room>, <Joint>, <Exit>
 //     xml_node: узел соответствующего тега
-// Возвращает объект [ orient | room | joint | exit ]
+// Возвращает объект [ orient | room | joint ]
 function read_object_on_side (xml_node)
 {
     if (xml_node.tagName == "Orient" || xml_node.tagName == "Room"
-        || xml_node.tagName == "Joint" || xml_node.tagName == "Exit")
+        || xml_node.tagName == "Joint")
     {
         if (xml_node.tagName == "Orient") {
             let orient = {
@@ -126,10 +135,19 @@ function read_object_on_side (xml_node)
             return room;
         }
         else if (xml_node.tagName == "Joint") {
-            // TODO
-        }
-        else if (xml_node.tagName == "Exit") {
-            // TODO
+            let joint = {
+                id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
+                obj_type: "joint",
+                text: ("text" in xml_node.attributes ? xml_node.attributes["text"].nodeValue : ""),
+                photo: ("photo" in xml_node.attributes ? xml_node.attributes["photo"].nodeValue : ""),
+                edges: [],  // список смежных объектов в графе (см. process_plan.js)
+            };
+            if (!joint.id) {
+                alert(`Пустой id у тега <Joint>`);
+            }
+            plan.joints.push(joint);
+            register_object_id(joint.id, joint);
+            return joint;
         }
     }
     else {
@@ -150,6 +168,7 @@ function read_part (xml_node, square, dir, type)
     // в тег <Part> вложены теги <Orient>, <Room>, <Joint>, <Exit>
     for (let xml_child of xml_node.childNodes) {
         object = read_object_on_side(xml_child);
+        object.parent_square = square;  // ссылка на площадку, на стороне которой находится объект
         object.part_type = type;  // к объекту на стороне площадки добавляется атрибут part_type
         square.objects[dir].push(object);
     }
@@ -222,59 +241,6 @@ function read_square (xml_node, building, floor)
 
 
 
-// ЧТО ДЕЛАЕТ: читает ориентир <Orient> или <Room>. Возвращает объект и отправляет его в plan.orients
-
-function read_orient (xml_node, square)
-{
-    let orient = {
-        id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
-        type: xml_node.tagName,    // Orient или Room
-        name: ("name" in xml_node.attributes ? xml_node.attributes["name"].nodeValue : ""),
-        text: ("text" in xml_node.attributes ? xml_node.attributes["text"].nodeValue : ""),
-        no: ("no" in xml_node.attributes ? xml_node.attributes["no"].nodeValue : ""),
-        key: ("key" in xml_node.attributes),
-        wall: ("wall" in xml_node.attributes ? xml_node.attributes["wall"].nodeValue : ""),
-        square_index: square.index,
-    };
-
-    // добавляем в общий список и в индекс
-    plan.orients.push(orient);
-    if (orient.id) plan.orient_by_id.set(orient.id, plan.orients.length - 1);
-    return orient;
-}
-
-// ЧТО ДЕЛАЕТ: читает стык <Joint> или <Exit>. Складывает в plan.bounds
-
-function read_bound (xml_node, square, side)
-{
-    let bound = {
-        id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
-        type: xml_node.tagName,  // Joint или Exit
-        text: ("text" in xml_node.attributes ? xml_node.attributes["text"].nodeValue : ""),
-        photo: ("photo" in xml_node.attributes ? xml_node.attributes["photo"].nodeValue : ""),
-        square_id: square ? square.id : "",  // плохо! у наших площадок обычно нет id!
-        square_index: square.index,
-        side_dir: side ? side.dir : "",
-        edges: []   // заполнит process_plan
-    };
-
-    plan.bounds.push(bound);
-    if (bound.id) plan.bound_by_id.set(bound.id, plan.bounds.length - 1);
-
-    // если это стык - добавим в joints_by_id
-    if (bound.type == "Joint") {
-        if (!plan.joints_by_id.has(bound.id)) {
-            plan.joints_by_id.set(bound.id, Array());
-        }
-        plan.joints_by_id.get(bound.id).push(plan.bounds.length - 1);
-    }
-
-    // если это выход — продублируем в exits
-    if (bound.type == "Exit") plan.exits.push(bound);
-
-    return bound;
-}
-
 // ЧТО ДЕЛАЕТ: читает <Corridor> — коридор. У него есть start, finish, finish_text, finish_photo, floor, building
 
 function read_corridor (xml_node, floor_num, block_id)
@@ -319,21 +285,6 @@ function read_stairs (xml_node)
     plan.stairs.push(stairs);
     if (stairs.id) plan.stairs_by_id.set(stairs.id, plan.stairs.length - 1);
     return stairs;
-}
-
-// ЧТО ДЕЛАЕТ: выносим логику чтения <Category> из read_plan в отдельную функцию
-
-function read_category (xml_node)
-{
-    let category_id = xml_node.attributes["id"].nodeValue;
-    let category_name = xml_node.attributes["name"].nodeValue;
-    let category = {
-        id: category_id,
-        name: category_name,
-        points: []    // заполнится позже, когда ориентиры будут добавляться
-    };
-    plan.categories.push(category);
-    plan.category_by_id.set(category_id, plan.categories.length - 1);
 }
 
 // Финальная функция
