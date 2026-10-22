@@ -6,3 +6,6 @@ Indoor-навигатор
 На этом сайте доступны:
   * [Навигатор по ВВГУ](https://lapkin25.github.io/Nav-any/VVSU)
   * [Навигатор по ДВФУ](https://lapkin25.github.io/Nav-any/FEFU)
+
+**Новая версия** (alpha):
+  * [Навигатор по ВВГУ](https://lapkin25.github.io/Nav-any/v3/VVSU)
