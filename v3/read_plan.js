@@ -240,7 +240,7 @@ function read_square (xml_node, building, floor)
 
 
 // Создает новый коридор (добавляет его в массив коридоров, регистрирует id коридора)
-function new_corridor (corridor_id, building, floor)
+function new_corridor (corridor_id, building, floor, start_id, finish_id)
 {
     let corridor = {
         obj_type: "corridor",
@@ -249,11 +249,9 @@ function new_corridor (corridor_id, building, floor)
         building: building,
         floor: floor,
         // id стыка, с которого начинается коридор
-        start_id: ("start" in xml_node.attributes ? xml_node.attributes["start"].nodeValue : ""),
+        start_id: start_id,
         // id стыка, на котором заканчивается коридор
-        finish_id: ("finish" in xml_node.attributes ? xml_node.attributes["finish"].nodeValue : ""),
-        finish_text: ("finish_text" in xml_node.attributes ? xml_node.attributes["finish_text"].nodeValue : ""),
-        finish_photo: ("finish_photo" in xml_node.attributes ? xml_node.attributes["finish_photo"].nodeValue : ""),
+        finish_id: finish_id,
         // ориентиры и стыки, находящиеся вдоль стенок коридора
         //   (ориентиры перечисляются в порядке движения от начала до конца коридора)
         objects: [],
@@ -272,7 +270,11 @@ function new_corridor (corridor_id, building, floor)
 function read_corridor (xml_node, building, floor)
 {
     let corridor_id = "id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : "";
-    let corridor = new_corridor(corridor_id, building, floor);
+    let start_id = "start" in xml_node.attributes ? xml_node.attributes["start"].nodeValue : "";
+    let finish_id = "finish" in xml_node.attributes ? xml_node.attributes["finish"].nodeValue : "";
+    let corridor = new_corridor(corridor_id, building, floor, start_id, finish_id);
+    corridor.finish_text = "finish_text" in xml_node.attributes ? xml_node.attributes["finish_text"].nodeValue : "";
+    corridor.finish_photo = "finish_photo" in xml_node.attributes ? xml_node.attributes["finish_photo"].nodeValue : "";
 
     // (TODO?) возможность добавить в тег <Corridor> вложенный тег <Part>,
     //   чтобы указать тип границы (не стенка, а свободное пространство или окно);
@@ -292,30 +294,52 @@ function read_corridor (xml_node, building, floor)
 }
 
 
-/*
-    С лестницами не всё так просто!
-    Объект "лестница" не просто соединяет два этажа - он соединяет два стыка на разных этажах!
-*/
-
-
-
-// ЧТО ДЕЛАЕТ: читает <Stairs> — лестницу. У неё floor_down, floor_up, text_up, text_down
-
-function read_stairs (xml_node)
+// Создает новую лестницу (добавляет её в массив лестниц, регистрирует id лестницы)
+function new_stairs (stairs_id, start_id, finish_id)
 {
     let stairs = {
-        id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
-        floor_down: ("floor_down" in xml_node.attributes ? parseInt(xml_node.attributes["floor_down"].nodeValue) : 0),
-        floor_up: ("floor_up" in xml_node.attributes ? parseInt(xml_node.attributes["floor_up"].nodeValue) : 0),
-        building: ("building" in xml_node.attributes ? parseInt(xml_node.attributes["building"].nodeValue) : 0),
-        text_up: ("text_up" in xml_node.attributes ? xml_node.attributes["text_up"].nodeValue : ""),
-        text_down: ("text_down" in xml_node.attributes ? xml_node.attributes["text_down"].nodeValue : "")
+        obj_type: "stairs",
+        id: corridor_id,
+        name: "",
+        // id стыка, с которого начинается лестница
+        start_id: start_id,
+        // id стыка, на котором заканчивается лестница
+        finish_id: finish_id,
+        // ориентиры и стыки, находящиеся по сторонам лестницы
+        //   (ориентиры перечисляются в порядке движения от начала до конца лестницы)
+        objects: [],
+        edges: [],  // список смежных объектов в графе (см. process_plan.js)
     };
-
+    // (TODO?) заполнить у объекта stairs поля start_building, start_floor, finish_building, finish_floor
     plan.stairs.push(stairs);
-    if (stairs.id) plan.stairs_by_id.set(stairs.id, plan.stairs.length - 1);
+    register_object_id(stairs_id, stairs);
     return stairs;
 }
+
+
+// Обработка XML-тега <Stairs>
+//     xml_node: узел тега <Stairs>
+function read_stairs (xml_node)
+{
+    let stairs_id = "id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : "";
+    let start_id = "start" in xml_node.attributes ? xml_node.attributes["start"].nodeValue : "";
+    let finish_id = "finish" in xml_node.attributes ? xml_node.attributes["finish"].nodeValue : "";
+    let stairs = new_stairs(stairs_id, start_id, finish_id);
+    // (TODO?) заполнить другие поля объекта stairs - например, text_start, text_finish?
+    
+    // Дальше - по аналогии с read_part
+    // в тег <Stairs> могут быть вложены теги <Orient>
+    // перечислить все вложенные теги
+    for (let xml_child of xml_node.childNodes) {
+        object = read_object_on_side(xml_child);
+        object.parent_square = stairs;  // ссылка на площадку, на стороне которой находится объект
+        object.part_type = "wall";  // см. TODO (выше)
+        stairs.objects.push(object);
+    }
+
+    return stairs;
+}
+
 
 // Финальная функция
 // ЧТО ДЕЛАЕТ: корневой цикл. Вместо <Floor> внутри <Plan> теперь <Block> (отсек = этаж + корпус), 
