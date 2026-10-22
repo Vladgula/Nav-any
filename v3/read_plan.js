@@ -342,11 +342,6 @@ function read_stairs (xml_node)
 }
 
 
-// Финальная функция
-// ЧТО ДЕЛАЕТ: корневой цикл. Вместо <Floor> внутри <Plan> теперь <Block> (отсек = этаж + корпус), 
-// внутри — <Square>, <Corridor>, <Stairs>. <Exit> и <Card> и <Category> — на уровне <Plan>.
-
-
 // Обработка XML-тега <Block>
 //     xml_node: узел тега <Block>
 //     building: корпус
@@ -355,8 +350,47 @@ function read_block (xml_node, building, floor)
 {
     // TODO: если вложенный тег - <Block>, читаем все вложенные блоки;
     //   если вложенный тег - <Square>/<Corridor>/<Stairs>, читаем все вложенные площадки/коридоры/лестницы
+    
+    // Обновить значения атрибутов building, floor, если они переопределяются во вложенном теге <Block>
+    let new_building = building;
+    let new_floor = floor;
+    if ("building" in xml_node.attributes) {
+        new_building = xml_node.attributes["building"].nodeValue;
+    }
+    if ("floor" in xml_node.attributes) {
+        new_floor = xml_node.attributes["floor"].nodeValue;
+    }
 
-
+    if (xml_node.children.length > 0) {
+        // если первый вложенный тег - <Block>, прочитать все вложенные теги <Block>
+        if (xml_node.children[0].tagName == "Block") {
+            for (let xml_child of xml_node.childNodes) {
+                if (xml_child.tagName == "Block") {
+                    read_block(xml_child, new_building, new_floor);
+                }
+                else {
+                    console.warn("Посторонний тег внутри <Block>, где есть вложенный тег <Block>");
+                }
+            }
+        }
+        // если вложенный тег - <Square>/<Corridor>/<Stairs>, прочитать все вложенные площадки/коридоры/лестницы
+        else {
+            for (let xml_child of xml_node.childNodes) {
+                if (xml_child.tagName == "Square") {
+                    read_square(xml_child, new_building, new_floor);
+                }
+                else if (xml_child.tagName == "Corridor") {
+                    read_corridor(xml_child, new_building, new_floor);
+                }
+                else if (xml_child.tagName == "Stairs") {
+                    read_stairs(xml_child);
+                }
+                else {
+                    console.warn(`Посторонний тег внутри <Block>, где есть вложенные теги типа "площадка"`);
+                }
+            }            
+        }
+    }
 }
 
 
@@ -400,52 +434,6 @@ function read_plan ()
             console.warn("Ошибка: внутри <Plan> неизвестный тег " + plan_child.tagName);
         }
     }
-
-/*
-        if (plan_child.tagName == "Building") {
-            // внутри <Building> — <Block> (отсеки/этажи)
-            for (let building_child of plan_child.childNodes) {
-
-                if (building_child.tagName == "Block") {
-                    let floor_num = ("floor" in building_child.attributes
-                        ? parseInt(building_child.attributes["floor"].nodeValue) : 0);
-                    let block_id = ("id" in building_child.attributes
-                        ? building_child.attributes["id"].nodeValue : "");
-
-                    // регистрируем отсек в plan.blocks
-                    plan.blocks.push({ id: block_id, floor: floor_num });
-                    if (block_id) plan.block_by_id.set(block_id, plan.blocks.length - 1);
-
-                    // проходим по детям отсека: Square / Corridor / Stairs
-                    for (let block_child of building_child.childNodes) {
-                        if (block_child.tagName == "Square") {
-                            read_square(block_child, floor_num, block_id);
-                        }
-                        else if (block_child.tagName == "Corridor") {
-                            read_corridor(block_child, floor_num, block_id);
-                        }
-                        else if (block_child.tagName == "Stairs") {
-                            read_stairs(block_child);
-                        }
-                    }
-                }
-            }
-        }
-        // <Exit> — выход (на уровне всего здания) — пока у тебя нет, но пусть будет
-        else if (plan_child.tagName == "Exit") {
-            read_bound(plan_child, null, null);
-        }
-        // <Card> — карточка ориентира
-        else if (plan_child.tagName == "Card") {
-            let point_id = plan_child.attributes["point"].nodeValue;
-            plan.cards.set(point_id, plan_child.innerHTML);
-        }
-        // <Category> — категория ориентиров
-        else if (plan_child.tagName == "Category") {
-            read_category(plan_child);
-        }
-    }
-*/
 }
 
 read_plan();
