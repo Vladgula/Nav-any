@@ -319,6 +319,7 @@ function new_stairs (stairs_id, start_id, finish_id)
 
 // Обработка XML-тега <Stairs>
 //     xml_node: узел тега <Stairs>
+// (?) узкое место: откуда брать атрибуты building и floor у объекта "stairs"? => обратиться к соответствующим стыкам
 function read_stairs (xml_node)
 {
     let stairs_id = "id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : "";
@@ -359,6 +360,27 @@ function read_block (xml_node, building, floor)
 }
 
 
+// Обработка XML-тега <Exit>
+//     xml_node: узел тега <Part>
+// (?) узкое место: откуда брать атрибуты building и floor у объекта "exit"? => обратиться к соответствующим стыкам
+function read_exit(xml_node)
+{
+    let exit = {
+        id: ("id" in xml_node.attributes ? xml_node.attributes["id"].nodeValue : ""),
+        obj_type: "exit",
+        text: ("text" in xml_node.attributes ? xml_node.attributes["text"].nodeValue : ""),
+        photo: ("photo" in xml_node.attributes ? xml_node.attributes["photo"].nodeValue : ""),
+        edges: [],  // список смежных объектов в графе (см. process_plan.js)
+    };
+    if (!exit.id) {
+        alert(`Пустой id у тега <Exit>`);
+    }
+    plan.exits.push(exit);
+    register_object_id(exit.id, exit);
+    return exit;
+}
+
+
 // Обработка XML-файла
 function read_plan ()
 {
@@ -373,7 +395,6 @@ function read_plan ()
         }
         else if (plan_child.tagName == "Exit") {
             read_exit(plan_child);
-            // TODO: написать read_exit
         }
         else {
             console.warn("Ошибка: внутри <Plan> неизвестный тег " + plan_child.tagName);
