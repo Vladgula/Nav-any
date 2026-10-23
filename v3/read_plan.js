@@ -42,6 +42,8 @@ let plan = {
     joints_by_id: new Map(),
     // TODO: добавить отдельный ассоциативный массив exists_by_id для хранения выходов
 
+    // счетчик объектов
+    obj_counter: 0,
     // дополнительная информация, добавляемая модулем process_plan.js
     //vertices: [],         // вершины графа (площадки, стыки, ориентиры)
     //edges: []             // двумерный массив - списки смежности графа
@@ -51,6 +53,8 @@ let plan = {
 // Добавляет id объекта в ассоциативный массив object_by_id
 function register_object_id (object_id, object)
 {
+    // заполнить object.obj_index
+    object.obj_index = plan.obj_counter++;
     if (object_id) {  // если object_id не пуст
         if (plan.object_by_id.has(object_id))
             alert(`Дублирование id ${object_id}`);
