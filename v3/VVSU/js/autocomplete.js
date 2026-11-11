@@ -57,11 +57,11 @@ function handleBlur() {
 function searchPoints(query) {
     const lowerQuery = query.toLowerCase();
 
-    return plan.points
-        .filter(point => point.id.toLowerCase().includes(lowerQuery))
+    return plan.orients
+        .filter(point => point.name.toLowerCase().includes(lowerQuery))
         .sort((a, b) => {
-            const aName = a.id.toLowerCase();
-            const bName = b.id.toLowerCase();
+            const aName = a.name.toLowerCase();
+            const bName = b.name.toLowerCase();
 
             // Проверяем, начинается ли слово с запроса
             const aStartsWith = aName.startsWith(lowerQuery) ? 0 : 1;
@@ -91,10 +91,10 @@ function showAutocomplete(items, inputElement) {
     items.forEach(item => {
         const itemElement = document.createElement('div');
         itemElement.className = 'autocomplete__item';
-        itemElement.textContent = item.id;
+        itemElement.textContent = item.name;
 
         const handleSelect = (e) => {
-            inputElement.value = item.id;
+            inputElement.value = item.name;
             hideAutocomplete();
             inputElement.focus();
         }

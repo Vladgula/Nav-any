@@ -20,8 +20,8 @@ function fillToField(id) {
 
 function pointNameToHTML(name, id) {
     let s = ``;
-    if (plan.cards.has(id))
-        s = `&nbsp;<a href="card.html?point=${id}" target="_blank">[к]</a>`;
+    //if (plan.cards.has(id))
+    //    s = `&nbsp;<a href="card.html?point=${id}" target="_blank">[к]</a>`;
     return `<li><div><a href="javascript:fillToField('${id}');">${name}${s}</a></div><div><a href="javascript:fillFromField('${id}');">(${id})</a></div></li>`;
 }
 
@@ -30,18 +30,18 @@ function categoryNameToHTML(name) {
 }
 
 function getFloorArray() {
-    let floorSet = new Set()
+    let floorSet = new Set();
 
-    const len = plan.points.length;
+    const len = plan.orients.length;
     pointsHTMLByFloor['fav'] = '';
     for (let i = 0; i < len; i++) {
-        let point = plan.points[i];
+        let orient = plan.orients[i];
         //console.log(point.floor + " [" + typeof point.floor + "]");
-        let floorNumber = point.floor;
+        let floorNumber = orient.parent_square.floor;
         floorSet.add(floorNumber);
 
-        if (point.name.length !== 0) {
-            let str = pointNameToHTML(point.name, point.id);
+        if (orient.name.length !== 0) {
+            let str = pointNameToHTML(orient.name, orient.id);
             if (pointsHTMLByFloor[floorNumber] === undefined) {
                 pointsHTMLByFloor[floorNumber] = str;
             } else {
@@ -49,17 +49,17 @@ function getFloorArray() {
             }
         }
 
-        if (point.fav) {
+        if (orient.key) {
             pointsHTMLByFloor['fav'] += pointNameToHTML(point.name, point.id);
         }
     }
 
-    for (c of plan.categories) {
+/*    for (c of plan.categories) {
          pointsHTMLByFloor['fav'] += categoryNameToHTML(c.name);
          for (p of c.points) {
              pointsHTMLByFloor['fav'] += pointNameToHTML(plan.points[p].name, plan.points[p].id);
          }
-    }
+    } */
 
     return Array.from(floorSet).sort();
 }
