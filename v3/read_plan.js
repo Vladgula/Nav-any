@@ -161,6 +161,7 @@ function read_object_on_side (xml_node)
     }
 }
 
+//Сделал изменения в функции read_plan для вывода
 
 // Обработка XML-тега <Part> либо тега <Side>, внутри которого нет <Part>
 //     xml_node: узел тега <Part>
@@ -168,15 +169,40 @@ function read_object_on_side (xml_node)
 //     dir: направление стороны площадки
 //     type: тип границы ("wall" | "window" | "free")
 // Добавляет к площадке ориентиры, расположенные на данной стороне
+//function read_part (xml_node, square, dir, type)
+//{
+    // в тег <Part> вложены теги <Orient>, <Room>, <Joint>, <Exit>
+    //for (let xml_child of xml_node.childNodes) {
+        //if (xml_child.nodeType != 1) continue;  // если это не тег => продолжить
+        //let object = read_object_on_side(xml_child);
+        //object.parent_square = square;  // ссылка на площадку, на стороне которой находится объект
+        //object.part_type = type;  // к объекту на стороне площадки добавляется атрибут part_type
+        
+        //square.objects.get(dir).push(object);
+    //}
+//}
+
+// Обработка XML-тега <Part> либо тега <Side>, внутри которого нет <Part>
 function read_part (xml_node, square, dir, type)
 {
     // в тег <Part> вложены теги <Orient>, <Room>, <Joint>, <Exit>
     for (let xml_child of xml_node.childNodes) {
         if (xml_child.nodeType != 1) continue;  // если это не тег => продолжить
+        
         let object = read_object_on_side(xml_child);
-        object.parent_square = square;  // ссылка на площадку, на стороне которой находится объект
-        object.part_type = type;  // к объекту на стороне площадки добавляется атрибут part_type
-        square.objects.get(dir).push(object);
+        if (object) {
+            object.parent_square = square;  // ссылка на площадку, на стороне которой находится объект
+            object.part_type = type;  // к объекту на стороне площадки добавляется атрибут part_type
+            
+            // ИСПРАВЛЕНИЕ: Проверяем, что это за объект
+            if (square.objects instanceof Map) {
+                // Если это площадка (Square), у нее objects - это Map
+                square.objects.get(dir).push(object);
+            } else {
+                // Если это коридор или лестница, у них objects - это обычный массив
+                square.objects.push(object);
+            }
+        }
     }
 }
 
@@ -285,15 +311,36 @@ function read_corridor (xml_node, building, floor)
     //   чтобы указать тип границы (не стенка, а свободное пространство или окно);
     // тогда можно будет на стенках коридора указывать стыки
     
+// Сделал изменения в этой части фнкции по чтению корридоров, добавив проверку f (object) и защиту от дубликатов 
+// (чтобы не было бесконечных циклов в графе)
+
     // Дальше - по аналогии с read_part
     // в тег <Corridor> вложены теги <Orient>, <Room>
     // перечислить все вложенные теги
-    for (let xml_child of xml_node.childNodes) {
-        if (xml_child.nodeType != 1) continue;  // если это не тег => продолжить
+    //for (let xml_child of xml_node.childNodes) {
+    //    if (xml_child.nodeType != 1) continue;  // если это не тег => продолжить
+    //    let object = read_object_on_side(xml_child);
+    //    object.parent_square = corridor;  // ссылка на площадку, на стороне которой находится объект
+    //    object.part_type = "wall";  // см. TODO (выше)
+    //    corridor.objects.push(object);
+    //}
+
+    //return corridor;
+
+        for (let xml_child of xml_node.childNodes) {
+        if (xml_child.nodeType != 1) continue; 
+        
         let object = read_object_on_side(xml_child);
-        object.parent_square = corridor;  // ссылка на площадку, на стороне которой находится объект
-        object.part_type = "wall";  // см. TODO (выше)
-        corridor.objects.push(object);
+        if (object) {
+            object.parent_square = corridor;
+            object.part_type = "wall";
+            corridor.objects.push(object);
+            
+            // Если внутри коридора вдруг встретится Joint, добавляем его в общий список
+            if (object.obj_type == "joint") {
+                plan.joints.push(object);
+            }
+        }
     }
 
     return corridor;
