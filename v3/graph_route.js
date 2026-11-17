@@ -44,5 +44,5 @@ function get_route (start, finish)
 // (TODO?) чтобы учесть длину коридора, может впоследствии потребоваться взвешенный граф
 
 // отладка
-route = get_route(plan.orients[0], plan.orients[8]);
-console.log(route);
+//route = get_route(plan.orients[0], plan.orients[8]);
+//console.log(route);
