@@ -55,7 +55,9 @@ function showRoute()
 
         let route = '';
         try {
-            route = findRoute(from_point, to_point);
+            //route = findRoute(from_point, to_point);
+            route = simpleFindRoute(from_point, to_point);
+            console.log(route);
         } catch (e) {
             errorText.innerHTML = e.message;
             errorText.hidden = false;
@@ -64,7 +66,8 @@ function showRoute()
 
         //let route_str = route.join("<br/>");
         let route_str = route.map((val, idx) => {
-            return getRouteStepComponentString(val.route, val.detailed_route, val.route_card, val.route_scheme, val.scheme_detail_text);
+            //return getRouteStepComponentString(val.route, val.detailed_route, val.route_card, val.route_scheme, val.scheme_detail_text);
+            return getRouteStepComponentString(val, "", "", "", "");
         }).join(' ');
 
         outputContainer.innerHTML = route_str;
