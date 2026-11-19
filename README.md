@@ -9,3 +9,6 @@ Indoor-навигатор
 
 **Новая версия** (alpha):
   * [Навигатор по ВВГУ](https://lapkin25.github.io/Nav-any/v3/VVSU)
+
+**Экспериментальная версия** (alpha):
+  * [Навигатор по ВВГУ](https://lapkin25.github.io/orientir)
